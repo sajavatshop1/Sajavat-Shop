@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="100%" height="100%">
+  <defs>
+    <!-- Deep Royal Wine Background Gradient -->
+    <radialGradient id="wineBg" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#7A0016" />
+      <stop offset="60%" stop-color="#6F0013" />
+      <stop offset="100%" stop-color="#5E000F" />
+    </radialGradient>
+
+    <!-- Metallic Royal Gold Gradient matching uploaded logo -->
+    <linearGradient id="goldMetallic" x1="0%" y1="0%" x2="100%" y2="85%">
+      <stop offset="0%" stop-color="#FCEAB3" />
+      <stop offset="25%" stop-color="#E9CB7E" />
+      <stop offset="55%" stop-color="#DBB85A" />
+      <stop offset="85%" stop-color="#CA9E35" />
+      <stop offset="100%" stop-color="#B3861D" />
+    </linearGradient>
+
+    <!-- Warm Highlight Gold -->
+    <linearGradient id="goldHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0C4" />
+      <stop offset="100%" stop-color="#D4AF37" />
+    </linearGradient>
+
+    <!-- Soft 3D Luxury Drop Shadow -->
+    <filter id="luxuryShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3.5" flood-color="#360007" flood-opacity="0.75" />
+    </filter>
+
+    <!-- Script Tagline Shadow -->
+    <filter id="taglineShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="1.5" dy="2.5" stdDeviation="1" flood-color="#420008" flood-opacity="0.9" />
+    </filter>
+
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;family=Great+Vibes&amp;family=Caveat:wght@700&amp;display=swap');
+      
+      .brand-title {
+        font-family: 'Playfair Display', 'Didot', 'Bodoni MT', 'Cinzel', serif;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      
+      .tagline-text {
+        font-family: 'Caveat', 'Great Vibes', 'Brush Script MT', cursive, serif;
+        font-weight: 700;
+        font-style: italic;
+        letter-spacing: 0.02em;
+      }
+    </style>
+  </defs>
+
+  <!-- Solid Rich Royal Wine Burgundy Canvas -->
+  <rect width="1000" height="1000" fill="url(#wineBg)" />
+
+  <!-- MAIN LOGO GRAPHIC GROUP -->
+  <g id="sajavat-insignia" filter="url(#luxuryShadow)">
+    
+    <!-- 1. ORNAMENTAL RIBBON FLOURISH TIED TO 'S' -->
+    <g id="ribbon-flourish" stroke="url(#goldMetallic)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- Ribbon upper-left bow loop -->
+      <path d="M190 380 C 172 355, 145 365, 155 390 C 162 406, 182 400, 192 392" stroke-width="4.5" />
+      
+      <!-- Ribbon upper-right bow loop -->
+      <path d="M192 392 C 205 372, 230 378, 222 402 C 215 418, 198 412, 194 398" stroke-width="4.2" />
+      
+      <!-- Center Ribbon Tie Knot -->
+      <circle cx="192" cy="392" r="5.5" fill="url(#goldMetallic)" stroke="none" />
+      
+      <!-- Flowing ribbon streamer tail 1 looping gracefully out to the left -->
+      <path d="M178 398 C 152 410, 130 435, 142 468 C 148 485, 160 492, 168 502" stroke-width="4.2" />
+      
+      <!-- Flowing ribbon streamer tail 2 extending outward and curling upwards at bottom -->
+      <path d="M172 394 C 135 408, 108 440, 100 480 C 92 520, 110 545, 138 550 C 158 554, 172 538, 168 518 C 165 500, 148 495, 138 505" stroke-width="3.8" />
+    </g>
+
+    <!-- 2. MAIN WORDMARK "Sajavat" -->
+    <!-- Letter 'S' Custom Crafted High-Contrast Glyph -->
+    <g id="wordmark-letters">
+      <text
+        x="150"
+        y="565"
+        class="brand-title"
+        font-size="240"
+        fill="url(#goldMetallic)"
+      >
+        S
+      </text>
+
+      <!-- Letters "ajavat" -->
+      <text
+        x="272"
+        y="565"
+        class="brand-title"
+        font-size="240"
+        fill="url(#goldMetallic)"
+      >
+        ajavat
+      </text>
+    </g>
+
+    <!-- Elevated Golden Dot on 'j' -->
+    <circle
+      cx="428"
+      cy="406"
+      r="15"
+      fill="url(#goldMetallic)"
+      stroke="url(#goldHighlight)"
+      stroke-width="1.5"
+    />
+
+    <!-- Sweeping Tail Extension for 'j' connecting with baseline bar -->
+    <path
+      d="M 406 565 C 404 605, 386 638, 355 640 C 375 643, 415 644, 438 610 C 445 600, 448 585, 448 565 Z"
+      fill="url(#goldMetallic)"
+    />
+
+    <!-- 3. TRADITIONAL HANGING DIWALI LANTERN (KANDEEL) FROM 't' -->
+    <g id="hanging-lantern" stroke="url(#goldMetallic)" fill="none">
+      <!-- Slender suspension cord from right crossbar of 't' -->
+      <line x1="848" y1="432" x2="848" y2="452" stroke-width="2.8" stroke-linecap="round" />
+      
+      <!-- Top hanging loop ring -->
+      <circle cx="848" cy="452" r="3.2" stroke-width="2.2" />
+      
+      <!-- Lantern top dome cap -->
+      <path d="M 836 460 L 860 460 L 855 455 L 841 455 Z" fill="url(#goldMetallic)" stroke-width="1" />
+      
+      <!-- Hexagonal / cylindrical lantern body cage -->
+      <polygon
+        points="836,460 860,460 864,482 860,504 836,504 832,482"
+        stroke-width="2.8"
+        stroke-linejoin="round"
+      />
+      
+      <!-- Internal decorative diamond lattice mesh -->
+      <line x1="836" y1="471" x2="860" y2="471" stroke-width="1.4" opacity="0.85" />
+      <line x1="834" y1="482" x2="862" y2="482" stroke-width="1.8" opacity="0.9" />
+      <line x1="836" y1="493" x2="860" y2="493" stroke-width="1.4" opacity="0.85" />
+      
+      <!-- Vertical and diagonal filigree ribs -->
+      <line x1="848" y1="460" x2="848" y2="504" stroke-width="1.6" opacity="0.9" />
+      <line x1="842" y1="460" x2="854" y2="504" stroke-width="1.2" opacity="0.75" />
+      <line x1="854" y1="460" x2="842" y2="504" stroke-width="1.2" opacity="0.75" />
+      
+      <!-- Lantern bottom base rim -->
+      <line x1="838" y1="504" x2="858" y2="504" stroke-width="2.5" />
+      
+      <!-- Tassel stem & pendant bell -->
+      <line x1="848" y1="504" x2="848" y2="528" stroke-width="2.4" />
+      <circle cx="848" cy="528" r="3.5" fill="url(#goldMetallic)" />
+      
+      <!-- Triple fringe drop tassels -->
+      <line x1="844" y1="528" x2="844" y2="538" stroke-width="1.6" stroke-linecap="round" />
+      <line x1="848" y1="528" x2="848" y2="542" stroke-width="1.8" stroke-linecap="round" />
+      <line x1="852" y1="528" x2="852" y2="538" stroke-width="1.6" stroke-linecap="round" />
+    </g>
+
+    <!-- 4. ORNAMENTAL GOLDEN DIVIDER BAR WITH DIAMOND TERMINALS -->
+    <g id="divider-bar">
+      <!-- Left diamond finial (anchored near descender of 'j') -->
+      <polygon points="450,598 458,592 466,598 458,604" fill="url(#goldMetallic)" />
+      
+      <!-- Horizontal slender golden rule line -->
+      <line
+        x1="458"
+        y1="598"
+        x2="860"
+        y2="598"
+        stroke="url(#goldMetallic)"
+        stroke-width="3.5"
+        stroke-linecap="round"
+      />
+      
+      <!-- Right diamond finial -->
+      <polygon points="852,598 860,592 868,598 860,604" fill="url(#goldMetallic)" />
+    </g>
+
+    <!-- 5. TAGLINE SCRIPT: "Decore For Every Celebration" -->
+    <g id="tagline-group" filter="url(#taglineShadow)">
+      <!-- 3D Shadow layer for warm depth -->
+      <text
+        x="429"
+        y="642"
+        class="tagline-text"
+        font-size="44"
+        fill="#4A000A"
+      >
+        Decore For Every Celebration
+      </text>
+      
+      <!-- Main Metallic Gold Script -->
+      <text
+        x="428"
+        y="640"
+        class="tagline-text"
+        font-size="44"
+        fill="url(#goldMetallic)"
+      >
+        Decore For Every Celebration
+      </text>
+    </g>
+
+  </g>
+</svg>
