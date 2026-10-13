@@ -432,25 +432,44 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                   gridColumns === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
                 } gap-x-6 gap-y-10`}
               >
-                {filteredProducts.map(p => (
-                  <article key={p.id} className="group flex flex-col transition-all duration-300">
-                    <div className="relative w-full aspect-[4/5] bg-[#F3E6D5] overflow-hidden rounded-sm">
+                {filteredProducts.map((p, idx) => (
+                  <article key={p.id} className="group flex flex-col card-lift">
+
+                    <div className="relative w-full aspect-[4/5] bg-[#F3E6D5] overflow-hidden rounded-sm img-zoom">
                       <img
                         alt={p.name}
                         src={p.images.main}
+                        loading={idx < 6 ? 'eager' : 'lazy'}
+                        decoding="async"
                         onClick={() => onSelectProduct(p)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 cursor-pointer"
+                        className="w-full h-full object-cover cursor-pointer"
+                        width="400"
+                        height="500"
                       />
+
+                      {/* Badges */}
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {p.bestseller && (
+                          <span className="bg-[#800020] text-[#FFF9F2] text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5">
+                            Bestseller
+                          </span>
+                        )}
+                        {p.originalPrice && (
+                          <span className="bg-[#2D7A2D] text-white text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5">
+                            {Math.round((1 - p.price / p.originalPrice) * 100)}% off
+                          </span>
+                        )}
+                      </div>
 
                       {/* Wishlist Button */}
                       <button
                         type="button"
                         aria-label="Add to Wishlist"
                         onClick={() => toggleWishlist(p.id)}
-                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-[#FFF9F2]/90 hover:bg-[#FFF9F2] text-[#800020] flex items-center justify-center transition-transform active:scale-90 shadow-sm"
+                        className="absolute top-2 right-2 w-9 h-9 rounded-full bg-[#FFF9F2]/90 hover:bg-white text-[#7A6B69] hover:text-[#800020] flex items-center justify-center transition-all shadow-sm hover:shadow-md btn-press"
                       >
                         <span
-                          className={`material-symbols-outlined text-[18px] ${
+                          className={`material-symbols-outlined text-[18px] transition-all ${
                             isWishlisted(p.id) ? 'text-[#D45060]' : ''
                           }`}
                           style={isWishlisted(p.id) ? { fontVariationSettings: "'FILL' 1" } : undefined}
@@ -459,12 +478,12 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                         </span>
                       </button>
 
-                      {/* Quick Add Button */}
-                      <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      {/* Quick Add Button — slides up */}
+                      <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                         <button
                           type="button"
                           onClick={() => addToCart(p, 1)}
-                          className="w-full py-2.5 px-3 bg-[#FFF9F2] text-[#800020] hover:bg-[#800020] hover:text-[#FFF9F2] rounded-sm text-xs uppercase tracking-wider font-semibold shadow-md transition-colors flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 px-3 bg-[#FFF9F2] text-[#800020] hover:bg-[#800020] hover:text-[#FFF9F2] rounded-sm text-xs uppercase tracking-wider font-semibold shadow-md transition-colors flex items-center justify-center gap-1.5 btn-press"
                         >
                           <span className="material-symbols-outlined text-[16px]">shopping_bag</span>
                           <span>Quick Add</span>
@@ -479,7 +498,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({
 
                       <h3
                         onClick={() => onSelectProduct(p)}
-                        className="font-serif text-[15px] text-[#332927] group-hover:text-[#800020] transition-colors leading-snug font-normal cursor-pointer line-clamp-1"
+                        className="font-serif text-[15px] text-[#332927] group-hover:text-[#800020] transition-colors duration-200 leading-snug font-normal cursor-pointer line-clamp-1"
                       >
                         {p.name}
                       </h3>
@@ -499,6 +518,7 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                 ))}
               </div>
             )}
+
 
             {/* Pagination & Progress */}
             <div className="flex flex-col items-center justify-center gap-4 pt-8 border-t border-[#F3E6D5]">

@@ -180,6 +180,16 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView, onSelectCategory
                   Contact Concierge
                 </button>
               </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setCurrentView('store-map')}
+                  className="hover:text-white hover:underline transition-colors text-left inline-flex items-center gap-1.5"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                  Find Our Atelier
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -238,63 +248,95 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView, onSelectCategory
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#FFF9F2]/75">
+        {/* ── Trust & Security Badges ── */}
+        <div className="mt-8 pt-8 border-t border-[#FFF9F2]/15">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#F3E6D5]/60 text-center mb-5">
+            Your Privacy &amp; Security, Guaranteed
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              { icon: 'lock', title: '256-bit SSL', sub: 'Bank-grade encryption on every page' },
+              { icon: 'verified_user', title: 'Secure Payments', sub: 'Razorpay PCI-DSS Level 1 certified' },
+              { icon: 'replay', title: '7-Day Returns', sub: 'No-questions-asked return policy' },
+              { icon: 'local_shipping', title: 'Insured Shipping', sub: 'All parcels insured & tracked' },
+              { icon: 'workspace_premium', title: '100% Authentic', sub: 'Hand-inspected before dispatch' },
+              { icon: 'support_agent', title: 'Concierge Support', sub: 'Mon–Sat 10am–7pm IST' },
+            ].map((badge, i) => (
+              <div key={i} className="flex flex-col items-center text-center gap-1.5 p-3 rounded-sm border border-[#FFF9F2]/10 bg-[#600018]/30 hover:bg-[#600018]/50 transition-colors">
+                <span className="material-symbols-outlined text-[22px] text-[#F3E6D5]">{badge.icon}</span>
+                <span className="text-[11px] font-semibold text-[#F3E6D5] tracking-wide">{badge.title}</span>
+                <span className="text-[9px] text-[#FFF9F2]/60 leading-snug">{badge.sub}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Payment Methods Row */}
+          <div className="flex flex-col items-center gap-3 mt-6">
+            <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#F3E6D5]/60">
+              Accepted Payment Methods
+            </p>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {[
+                { label: 'UPI', sub: 'GPay · PhonePe · Paytm' },
+                { label: 'Visa', sub: 'Credit & Debit' },
+                { label: 'MasterCard', sub: 'Credit & Debit' },
+                { label: 'AmEx', sub: 'Credit Card' },
+                { label: 'Net Banking', sub: '50+ Banks' },
+                { label: 'EMI', sub: '0% on ₹5,000+' },
+                { label: 'COD', sub: 'Cash on Delivery' },
+              ].map(m => (
+                <div key={m.label} className="flex flex-col items-center bg-[#FFF9F2]/10 border border-[#FFF9F2]/20 rounded-sm px-3 py-1.5">
+                  <span className="text-[10px] font-bold text-white tracking-wider">{m.label}</span>
+                  <span className="text-[8px] text-[#FFF9F2]/50">{m.sub}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bottom Bar ── */}
+        <div className="pt-8 mt-4 border-t border-[#FFF9F2]/15 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#FFF9F2]/65">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
             <span>
               <button
                 type="button"
-                onClick={() => {
-                  window.location.hash = '#admin';
-                  setCurrentView('cms');
-                }}
+                onClick={() => { window.location.hash = '#admin'; setCurrentView('cms'); }}
                 className="text-inherit hover:text-white cursor-default focus:outline-none transition-colors"
                 title="Sajavat Decor"
                 aria-label="Staff Portal Access"
               >
                 ©
               </button>{' '}
-              Sajavat Decor LLP. All rights reserved.
+              {new Date().getFullYear()} Sajavat Decor LLP. All rights reserved.
             </span>
-            <span className="hidden sm:inline">·</span>
-            <div className="flex items-center space-x-4">
-              <button
-                type="button"
-                onClick={() => setCurrentView('customer-care')}
-                className="hover:text-white transition-colors"
-              >
-                Privacy Policy
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentView('customer-care')}
-                className="hover:text-white transition-colors"
-              >
-                Terms & Conditions
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentView('customer-care')}
-                className="hover:text-white transition-colors"
-              >
-                Shipping Policy
-              </button>
+            <span className="hidden sm:inline opacity-40">·</span>
+            <div className="flex items-center flex-wrap justify-center sm:justify-start gap-x-4 gap-y-1">
+              {[
+                { label: 'Privacy Policy', view: 'customer-care' },
+                { label: 'Terms & Conditions', view: 'customer-care' },
+                { label: 'Shipping Policy', view: 'customer-care' },
+                { label: 'Return Policy', view: 'returns-policy' },
+                { label: 'Cookie Policy', view: 'customer-care' },
+                { label: 'Sitemap', view: 'home' },
+              ].map(link => (
+                <button
+                  key={link.label}
+                  type="button"
+                  onClick={() => setCurrentView(link.view)}
+                  className="hover:text-white transition-colors whitespace-nowrap"
+                >
+                  {link.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 text-[10px] uppercase tracking-wider font-semibold">
-            <span className="border border-[#FFF9F2]/30 px-2 py-0.5 rounded-sm bg-[#600018]/50">
-              UPI
-            </span>
-            <span className="border border-[#FFF9F2]/30 px-2 py-0.5 rounded-sm bg-[#600018]/50">
-              VISA
-            </span>
-            <span className="border border-[#FFF9F2]/30 px-2 py-0.5 rounded-sm bg-[#600018]/50">
-              MASTERCARD
-            </span>
-            <span className="border border-[#FFF9F2]/30 px-2 py-0.5 rounded-sm bg-[#600018]/50">
-              NETBANKING
-            </span>
+          <div className="flex items-center gap-2 text-[#F3E6D5]/60 text-[10px]">
+            <span className="material-symbols-outlined text-[14px] text-[#2D7A2D]">verified_user</span>
+            <span>SSL Secured</span>
+            <span className="opacity-40">·</span>
+            <span className="material-symbols-outlined text-[14px]">lock</span>
+            <span>PCI-DSS Compliant</span>
           </div>
         </div>
       </div>

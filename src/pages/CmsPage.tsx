@@ -312,19 +312,12 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
     }
   };
 
-  // Quick fill demo credentials
-  const fillDemoCredentials = (role: 'admin' | 'manager' | 'editor') => {
-    if (role === 'admin') {
-      setLoginIdentifier('admin@sajavat.com');
-      setLoginPassword('SajavatAdmin2025!');
-    } else if (role === 'manager') {
-      setLoginIdentifier('manager@sajavat.com');
-      setLoginPassword('SajavatManager2025!');
-    } else {
-      setLoginIdentifier('editor@sajavat.com');
-      setLoginPassword('SajavatEditor2025!');
-    }
+  // Fill sample super admin credentials
+  const fillSampleCredentials = () => {
+    setLoginIdentifier('admin@sajavat.com');
+    setLoginPassword('Admin@123');
   };
+
 
   // Sign out handler
   const handleLogout = async () => {
@@ -934,8 +927,9 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
                     required
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="admin@sajavat.com"
+                    placeholder="admin@sajavat.com or admin"
                     className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#991B1B] focus:ring-2 focus:ring-[#D4AF37]/30 transition-all shadow-xs"
+
                   />
                 </div>
               </div>
@@ -986,42 +980,41 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
               </button>
             </form>
 
-            {/* Quick Demo Credentials Pill Bar */}
+            {/* Sample Super Admin Credentials Card */}
             <div className="mt-8 pt-6 border-t border-stone-200">
-              <p className="text-[11px] uppercase tracking-wider text-stone-600 font-bold text-center mb-3">
-                Quick Fill Demo Staff Credentials
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => fillDemoCredentials('admin')}
-                  className="bg-stone-50 hover:bg-[#FFF8EA] border border-stone-200 hover:border-[#D4AF37] rounded-xl p-2.5 text-center transition-all group cursor-pointer shadow-2xs"
-                >
-                  <p className="text-[11px] font-bold text-stone-900 group-hover:text-[#9B782E]">Super Admin</p>
-                  <p className="text-[10px] text-stone-500 mt-0.5">Master Curate</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoCredentials('manager')}
-                  className="bg-stone-50 hover:bg-[#FFF8EA] border border-stone-200 hover:border-[#D4AF37] rounded-xl p-2.5 text-center transition-all group cursor-pointer shadow-2xs"
-                >
-                  <p className="text-[11px] font-bold text-stone-900 group-hover:text-[#9B782E]">Inventory</p>
-                  <p className="text-[10px] text-stone-500 mt-0.5">Stock Mgr</p>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoCredentials('editor')}
-                  className="bg-stone-50 hover:bg-[#FFF8EA] border border-stone-200 hover:border-[#D4AF37] rounded-xl p-2.5 text-center transition-all group cursor-pointer shadow-2xs"
-                >
-                  <p className="text-[11px] font-bold text-stone-900 group-hover:text-[#9B782E]">Editor</p>
-                  <p className="text-[10px] text-stone-500 mt-0.5">Journal Post</p>
-                </button>
+              <div className="bg-[#FFFDF7] border border-[#D4AF37]/35 rounded-xl p-4 text-left shadow-xs">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="w-4 h-4 text-[#991B1B]" />
+                    <span className="text-[11px] uppercase tracking-wider text-stone-800 font-bold">
+                      Sample Super Admin Credentials
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={fillSampleCredentials}
+                    className="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-lg bg-[#991B1B]/10 hover:bg-[#991B1B] text-[#991B1B] hover:text-white transition-all cursor-pointer border border-[#991B1B]/20"
+                  >
+                    Auto Fill
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200">
+                    <span className="text-[10px] uppercase text-stone-500 block font-semibold">User ID / Email</span>
+                    <code className="text-stone-900 font-bold text-xs select-all">admin@sajavat.com</code>
+                  </div>
+                  <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200">
+                    <span className="text-[10px] uppercase text-stone-500 block font-semibold">Password</span>
+                    <code className="text-stone-900 font-bold text-xs select-all">Admin@123</code>
+                  </div>
+                </div>
+                <p className="text-[10px] text-stone-600 mt-2.5 text-center font-medium">
+                  Super Admin Authority: Exclusive rights to modify products, stock, orders, journal, settings & staff.
+                </p>
               </div>
-              <p className="text-[11px] text-stone-500 text-center mt-3">
-                Default password: <code className="text-[#991B1B] font-semibold bg-stone-100 px-1.5 py-0.5 rounded">SajavatAdmin2025!</code>
-              </p>
             </div>
           </div>
+
         </div>
 
         {/* Bottom copyright / disclaimer */}

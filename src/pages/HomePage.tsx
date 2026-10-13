@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Product, JournalArticle, SiteSettings } from '../types';
 import { useCart } from '../context/CartContext';
+import { useScrollReveal, useScrollRevealAll } from '../hooks/useScrollReveal';
 
 interface HomePageProps {
   products: Product[];
@@ -26,7 +27,20 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
-  // 6 Category Grid items matching Image 7
+  // Scroll reveal refs
+  const trustRef = useScrollReveal();
+  const categoryTitleRef = useScrollReveal<HTMLDivElement>();
+  const categoryGridRef = useScrollRevealAll();
+  const highlightsTitleRef = useScrollReveal<HTMLDivElement>();
+  const highlightsGridRef = useScrollRevealAll();
+  const editorialRef = useScrollReveal<HTMLDivElement>();
+  const bestsellersRef = useScrollReveal<HTMLDivElement>();
+  const bestsellersGridRef = useScrollRevealAll();
+  const journalTitleRef = useScrollReveal<HTMLDivElement>();
+  const journalGridRef = useScrollRevealAll();
+  const newsletterRef = useScrollReveal<HTMLDivElement>();
+
+  // 6 Category Grid items
   const categoryTiles = [
     {
       id: 'diyas-candle-holders',
@@ -80,7 +94,7 @@ export const HomePage: React.FC<HomePageProps> = ({
     return p.featured;
   }).slice(0, 6);
 
-  // Customer Favorites matching bottom section of Image 7
+  // Customer Favorites
   const customerFavorites = products.filter(p => p.bestseller).slice(0, 4);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
@@ -91,71 +105,85 @@ export const HomePage: React.FC<HomePageProps> = ({
     setNewsletterEmail('');
   };
 
+  const trustBadges = [
+    { title: 'Pure Brass & Metalcraft', sub: 'Unlacquered hand-hammered heirloom finishes', icon: 'workspace_premium' },
+    { title: 'Botanical Fragrances', sub: 'Pure soy wax infused with temple oils', icon: 'spa' },
+    { title: 'Mindful Gifting', sub: 'Bespoke handmade archival gift boxes', icon: 'redeem' },
+    { title: 'Safe Pan-India Shipping', sub: 'Insured shockproof courier packing', icon: 'local_shipping' },
+  ];
+
   return (
     <div className="flex flex-col w-full">
-      {/* 1. HERO SECTION */}
-      <section className="relative w-full min-h-[580px] lg:min-h-[680px] bg-[#F3E6D5]/40 flex items-center overflow-hidden">
-        {/* Full-bleed Background Image with subtle atmospheric gradient overlay */}
+      {/* ─── 1. HERO SECTION ─── */}
+      <section className="relative w-full min-h-[580px] lg:min-h-[700px] flex items-center overflow-hidden bg-[#F3E6D5]/40">
+        {/* Full-bleed Background with subtle float animation */}
         <div className="absolute inset-0 z-0">
           <img
             alt="Warm ambient festive Indian living room with glowing diyas and candles"
-            className="w-full h-full object-cover object-center transition-all duration-700"
+            className="w-full h-full object-cover object-center hero-float"
             src={
               siteSettings?.heroImage ||
               "https://lh3.googleusercontent.com/aida-public/AB6AXuBMdGqTs8sIYaCbwDopmf31fHBsgPr8c1G59yDq68RsY96FN2KBGJHFTh-_MjF-q-wbNJ6jd6GrcJb_C_MDLONDbcXFq2fq4UNXEWsYZzBy_3CqkmhoiXaktJlof8y-EYiHth2oLamIIvsjVlPoFnNr6TpAhkIzGEAYOLqFDhNkcphMGn6ck0k6x_omVH3wk1zbeoAEcRPRwrKTmn-lutDS3lpehMqn7UBPHmuwfO323OrViLB4dPOjgA"
             }
+            // Hero is above-the-fold — do NOT lazy load
+            width="1920"
+            height="700"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#FFF9F2] via-[#FFF9F2]/80 to-transparent lg:w-3/5" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#FFF9F2] via-transparent to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#FFF9F2] via-[#FFF9F2]/85 to-transparent lg:w-3/5" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#FFF9F2] via-transparent to-black/5" />
         </div>
 
         {/* Hero Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 w-full">
           <div className="max-w-xl">
-            <div className="inline-flex items-center gap-2 mb-4">
+            <div className="inline-flex items-center gap-2 mb-5 animate-fadeInUp" style={{ animationDelay: '100ms' }}>
               <span className="w-8 h-[1px] bg-[#800020]" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#800020]">
                 Artisanal Festive Living
               </span>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#800020] font-normal leading-[1.12] mb-6">
+            <h1
+              className="font-serif text-4xl sm:text-5xl lg:text-6xl text-[#800020] font-normal leading-[1.1] mb-6 animate-fadeInUp"
+              style={{ animationDelay: '200ms' }}
+            >
               {siteSettings?.heroHeading || 'Make Every Moment'}{' '}
               <span className="italic font-light block sm:inline">
                 {siteSettings?.heroItalicWord || 'Beautiful.'}
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg text-[#554745] leading-relaxed mb-8 max-w-lg">
+            <p
+              className="text-base sm:text-lg text-[#554745] leading-relaxed mb-8 max-w-lg animate-fadeInUp"
+              style={{ animationDelay: '320ms' }}
+            >
               {siteSettings?.heroSubtitle ||
-                'Thoughtfully chosen décor for celebrations, meaningful moments, and everyday living. Handcrafted with reverence for India’s richest artisan traditions.'}
+                "Thoughtfully chosen décor for celebrations, meaningful moments, and everyday living. Handcrafted with reverence for India's richest artisan traditions."}
+
             </p>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 animate-fadeInUp" style={{ animationDelay: '440ms' }}>
               <button
                 type="button"
-                onClick={() => {
-                  onSelectCategory('all');
-                  setCurrentView('shop');
-                }}
-                className="inline-flex justify-center items-center px-8 py-3.5 bg-[#800020] text-[#FFF9F2] text-xs font-semibold uppercase tracking-[0.16em] hover:bg-[#600018] shadow-sm hover:shadow-md transition-all duration-300"
+                onClick={() => { onSelectCategory('all'); setCurrentView('shop'); }}
+                className="inline-flex justify-center items-center px-8 py-3.5 bg-[#800020] text-[#FFF9F2] text-xs font-semibold uppercase tracking-[0.16em] hover:bg-[#600018] shadow-md hover:shadow-lg transition-all duration-300 btn-press"
               >
                 {siteSettings?.heroPrimaryBtnText || 'Shop the Collection'}
               </button>
 
               <button
                 type="button"
-                onClick={() => {
-                  onSelectCategory('diyas-candle-holders');
-                  setCurrentView('shop');
-                }}
-                className="inline-flex justify-center items-center px-8 py-3.5 bg-transparent text-[#800020] border border-[#800020]/60 text-xs font-semibold uppercase tracking-[0.16em] hover:bg-[#800020] hover:text-[#FFF9F2] transition-all duration-300"
+                onClick={() => { onSelectCategory('diyas-candle-holders'); setCurrentView('shop'); }}
+                className="inline-flex justify-center items-center px-8 py-3.5 bg-transparent text-[#800020] border border-[#800020]/60 text-xs font-semibold uppercase tracking-[0.16em] hover:bg-[#800020] hover:text-[#FFF9F2] transition-all duration-300 btn-press"
               >
                 {siteSettings?.heroSecondaryBtnText || 'Explore Festive Décor'}
               </button>
             </div>
 
-            <div className="mt-10 pt-4 border-t border-[#F3E6D5] flex items-center gap-3">
+            <div
+              className="mt-10 pt-4 border-t border-[#F3E6D5] flex items-center gap-3 animate-fadeInUp"
+              style={{ animationDelay: '560ms' }}
+            >
               <span className="text-xs text-[#7A6B69] tracking-wide">
                 {siteSettings?.heroAudienceNote || (
                   <>
@@ -168,42 +196,37 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 2. TRUST / CRAFT ATTRIBUTES STRIP */}
-      <section className="w-full bg-[#FFF9F2] border-b border-[#F3E6D5] py-6">
+      {/* ─── 2. TRUST / CRAFT ATTRIBUTES STRIP ─── */}
+      <section
+        ref={trustRef as React.RefObject<HTMLElement>}
+        className="w-full bg-[#FFF9F2] border-b border-[#F3E6D5] py-7 reveal"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
-            <div className="flex flex-col space-y-0.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#800020]">
-                Pure Brass &amp; Metalcraft
-              </span>
-              <span className="text-xs text-[#7A6B69]">Unlacquered hand-hammered heirloom finishes</span>
-            </div>
-            <div className="flex flex-col space-y-0.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#800020]">
-                Botanical Fragrances
-              </span>
-              <span className="text-xs text-[#7A6B69]">Pure soy wax infused with temple oils</span>
-            </div>
-            <div className="flex flex-col space-y-0.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#800020]">
-                Mindful Gifting
-              </span>
-              <span className="text-xs text-[#7A6B69]">Bespoke handmade archival gift boxes</span>
-            </div>
-            <div className="flex flex-col space-y-0.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#800020]">
-                Safe Pan-India Shipping
-              </span>
-              <span className="text-xs text-[#7A6B69]">Insured shockproof courier packing</span>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 stagger-children">
+            {trustBadges.map((badge, idx) => (
+              <div key={idx} className="flex items-start gap-3 reveal" style={{ transitionDelay: `${idx * 80}ms` }}>
+                <span className="material-symbols-outlined text-[20px] text-[#800020] mt-0.5 shrink-0">
+                  {badge.icon}
+                </span>
+                <div className="flex flex-col space-y-0.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#800020]">
+                    {badge.title}
+                  </span>
+                  <span className="text-xs text-[#7A6B69]">{badge.sub}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 3. CATEGORY GRID ("Curated for Celebration") */}
+      {/* ─── 3. CATEGORY GRID ─── */}
       <section className="w-full py-20 bg-[#FFF9F2]" id="curated-categories">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+          <div
+            ref={categoryTitleRef as React.RefObject<HTMLDivElement>}
+            className="flex flex-col md:flex-row md:items-end justify-between mb-12 reveal"
+          >
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#800020] block mb-2">
                 Categories of Distinction
@@ -215,31 +238,39 @@ export const HomePage: React.FC<HomePageProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div ref={categoryGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             {categoryTiles.map(tile => (
               <div
                 key={tile.id}
-                onClick={() => {
-                  onSelectCategory(tile.id);
-                  setCurrentView('shop');
-                }}
-                className="group relative bg-[#FFF9F2] overflow-hidden rounded-sm flex flex-col border border-[#F3E6D5]/80 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                onClick={() => { onSelectCategory(tile.id); setCurrentView('shop'); }}
+                className="group relative bg-[#FFF9F2] overflow-hidden rounded-sm flex flex-col border border-[#F3E6D5]/80 card-lift cursor-pointer reveal"
               >
-                <div className="relative w-full aspect-[4/5] overflow-hidden bg-[#F3E6D5]">
+                <div className="relative w-full aspect-[4/5] overflow-hidden bg-[#F3E6D5] img-zoom">
                   <img
                     alt={tile.title}
                     src={tile.image}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                    width="480"
+                    height="600"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                  {/* Hover overlay accent */}
+                  <div className="absolute inset-0 bg-[#800020]/0 group-hover:bg-[#800020]/10 transition-colors duration-500" />
                   <div className="absolute bottom-0 inset-x-0 p-6 text-[#FFF9F2]">
-                    <span className="text-[10px] tracking-[0.2em] uppercase text-[#F3E6D5] block mb-1">
+                    <span className="text-[10px] tracking-[0.2em] uppercase text-[#F3E6D5]/80 block mb-1">
                       {tile.number}
                     </span>
-                    <h3 className="font-serif text-2xl text-white mb-2">{tile.title}</h3>
+                    <h3 className="font-serif text-2xl text-white mb-2 group-hover:text-[#F9E8B2] transition-colors duration-300">
+                      {tile.title}
+                    </h3>
                     <p className="text-xs text-[#FFF9F2]/80 mb-3 line-clamp-1">{tile.subtitle}</p>
-                    <span className="inline-flex items-center text-xs font-medium uppercase tracking-[0.15em] text-[#FFF9F2] group-hover:text-[#D45060] transition-colors">
-                      Explore <span className="material-symbols-outlined text-[14px] ml-1">arrow_forward</span>
+                    <span className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-[0.15em] text-[#FFF9F2] group-hover:text-[#F9E8B2] transition-colors">
+                      Explore
+                      <span className="material-symbols-outlined text-[14px] transition-transform duration-300 group-hover:translate-x-1">
+                        arrow_forward
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -249,86 +280,64 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 4. FESTIVE HIGHLIGHTS (FEATURED PRODUCTS GRID) */}
+      {/* ─── 4. FESTIVE HIGHLIGHTS (FEATURED PRODUCTS) ─── */}
       <section className="w-full py-20 bg-[#F3E6D5]/35 border-y border-[#F3E6D5]" id="featured-collection">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+          <div
+            ref={highlightsTitleRef as React.RefObject<HTMLDivElement>}
+            className="flex flex-col md:flex-row md:items-end justify-between mb-10 reveal"
+          >
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#800020] block mb-2">
                 Handmade Treasures
               </span>
               <h2 className="font-serif text-3xl sm:text-4xl text-[#800020]">Festive Highlights</h2>
             </div>
-            <div className="flex items-center space-x-6 mt-4 md:mt-0 text-xs font-medium uppercase tracking-[0.15em] text-[#7A6B69]">
-              <button
-                type="button"
-                onClick={() => setHighlightTab('all')}
-                className={`pb-1 transition-colors ${
-                  highlightTab === 'all'
-                    ? 'text-[#800020] border-b-2 border-[#800020] font-semibold'
-                    : 'hover:text-[#800020]'
-                }`}
-              >
-                All Highlights
-              </button>
-              <button
-                type="button"
-                onClick={() => setHighlightTab('urlis')}
-                className={`pb-1 transition-colors ${
-                  highlightTab === 'urlis'
-                    ? 'text-[#800020] border-b-2 border-[#800020] font-semibold'
-                    : 'hover:text-[#800020]'
-                }`}
-              >
-                Brass Urlis
-              </button>
-              <button
-                type="button"
-                onClick={() => setHighlightTab('aromatics')}
-                className={`pb-1 transition-colors ${
-                  highlightTab === 'aromatics'
-                    ? 'text-[#800020] border-b-2 border-[#800020] font-semibold'
-                    : 'hover:text-[#800020]'
-                }`}
-              >
-                Aromatics
-              </button>
-              <button
-                type="button"
-                onClick={() => setHighlightTab('pairs')}
-                className={`pb-1 transition-colors ${
-                  highlightTab === 'pairs'
-                    ? 'text-[#800020] border-b-2 border-[#800020] font-semibold'
-                    : 'hover:text-[#800020]'
-                }`}
-              >
-                Ritual Pairs
-              </button>
+            <div className="flex items-center space-x-5 mt-4 md:mt-0 text-xs font-medium uppercase tracking-[0.15em] text-[#7A6B69] overflow-x-auto pb-1">
+              {(['all', 'urlis', 'aromatics', 'pairs'] as const).map(tab => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setHighlightTab(tab)}
+                  className={`pb-1 whitespace-nowrap transition-all duration-200 ${
+                    highlightTab === tab
+                      ? 'text-[#800020] border-b-2 border-[#800020] font-semibold'
+                      : 'hover:text-[#800020]'
+                  }`}
+                >
+                  {tab === 'all' ? 'All Highlights' : tab === 'urlis' ? 'Brass Urlis' : tab === 'aromatics' ? 'Aromatics' : 'Ritual Pairs'}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* 6 Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* 6-Product Grid */}
+          <div ref={highlightsGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger-children">
             {highlightProducts.map(p => (
               <div
                 key={p.id}
-                className="group flex flex-col bg-[#FFF9F2] p-3 rounded-sm border border-[#F3E6D5] hover:shadow-md transition-all"
+                className="group flex flex-col bg-[#FFF9F2] p-3 rounded-sm border border-[#F3E6D5] card-lift reveal"
               >
-                <div className="relative w-full aspect-[4/5] bg-[#F3E6D5] overflow-hidden mb-4">
+                <div className="relative w-full aspect-[4/5] bg-[#F3E6D5] overflow-hidden mb-4 img-zoom">
                   <img
                     alt={p.name}
                     src={p.images.main}
+                    loading="lazy"
+                    decoding="async"
                     onClick={() => onSelectProduct(p)}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                    className="w-full h-full object-cover cursor-pointer"
+                    width="400"
+                    height="500"
                   />
+                  {/* Wishlist button */}
                   <button
                     type="button"
                     aria-label="Save to Wishlist"
                     onClick={() => toggleWishlist(p.id)}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-[#FFF9F2]/90 flex items-center justify-center text-[#7A6B69] hover:text-[#800020] transition-colors shadow-sm"
+                    className="absolute top-3 right-3 w-9 h-9 rounded-full bg-[#FFF9F2]/90 flex items-center justify-center text-[#7A6B69] hover:text-[#800020] hover:bg-white transition-all duration-200 shadow-sm hover:shadow-md btn-press"
                   >
                     <span
-                      className={`material-symbols-outlined text-[18px] ${
+                      className={`material-symbols-outlined text-[18px] transition-all duration-200 ${
                         isWishlisted(p.id) ? 'text-[#D45060]' : ''
                       }`}
                       style={isWishlisted(p.id) ? { fontVariationSettings: "'FILL' 1" } : undefined}
@@ -336,11 +345,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                       favorite
                     </span>
                   </button>
-                  <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  {/* Quick-Add CTA */}
+                  <div className="absolute inset-x-3 bottom-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
                     <button
                       type="button"
                       onClick={() => addToCart(p, 1)}
-                      className="w-full py-2.5 bg-[#800020] text-[#FFF9F2] text-xs font-semibold uppercase tracking-wider hover:bg-[#600018] shadow-md transition-colors"
+                      className="w-full py-2.5 bg-[#800020] text-[#FFF9F2] text-xs font-semibold uppercase tracking-wider hover:bg-[#600018] shadow-md transition-colors btn-press"
                     >
                       Quick Add
                     </button>
@@ -353,7 +363,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </span>
                   <h3
                     onClick={() => onSelectProduct(p)}
-                    className="font-serif text-lg text-[#800020] mb-1 cursor-pointer hover:underline"
+                    className="font-serif text-lg text-[#800020] mb-1 cursor-pointer hover:underline underline-offset-2"
                   >
                     {p.name}
                   </h3>
@@ -366,33 +376,58 @@ export const HomePage: React.FC<HomePageProps> = ({
                         ₹{p.originalPrice.toLocaleString('en-IN')}
                       </span>
                     )}
+                    {p.originalPrice && (
+                      <span className="text-[10px] font-semibold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">
+                        {Math.round((1 - p.price / p.originalPrice) * 100)}% off
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* View All CTA */}
+          <div className="mt-10 text-center">
+            <button
+              type="button"
+              onClick={() => { onSelectCategory('all'); setCurrentView('shop'); }}
+              className="inline-flex items-center gap-2 px-8 py-3 border border-[#800020]/50 text-[#800020] text-xs font-semibold uppercase tracking-[0.15em] hover:bg-[#800020] hover:text-white transition-all duration-300 btn-press"
+            >
+              View All Products
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* 5. EDITORIAL FEATURE / SEASONAL CURATION BANNER */}
+      {/* ─── 5. EDITORIAL FEATURE / SEASONAL CURATION BANNER ─── */}
       <section className="w-full py-16 bg-[#FFF9F2]" id="seasonal-curation">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-[#F3E6D5]/60 border border-[#F3E6D5] rounded-sm overflow-hidden">
+          <div
+            ref={editorialRef as React.RefObject<HTMLDivElement>}
+            className="bg-[#F3E6D5]/60 border border-[#F3E6D5] rounded-sm overflow-hidden reveal"
+          >
             <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[460px]">
-              <div className="lg:col-span-7 relative min-h-[300px] lg:min-h-full">
+              <div className="lg:col-span-7 relative min-h-[280px] lg:min-h-full img-zoom">
                 <img
                   alt="Festive Sanctuary: Diwali & Celebration Edit"
                   className="w-full h-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtYA3A7Lqt0hkhmmHylodjUsCEv6IpJyno-XXYWC2Jl9X3PQM7F6nY8cmETlyEGLMIWKP7E24S0m1KldHuv9hGE6_v53EwPyLtWE7akgEMO75QpxN8p_DSnmMfcTIfDsHbttAlltDwwjuPu5KKY1FAAh4oW-eIWpSjwXv628dkhR5NiYKyc4FOWx8k-nysCXv9NVHO3OvyJJd_gbrWSbi7xsrZyIpJcNUkpGyY0CN6Nh3LzmwApXYHUQ"
+                  width="800"
+                  height="460"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-transparent to-[#F3E6D5]/80" />
+                <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-transparent to-[#F3E6D5]/70" />
               </div>
               <div className="lg:col-span-5 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
                 <span className="text-[11px] font-semibold text-[#800020] tracking-[0.25em] uppercase mb-3">
-                  Festive &amp; Wedding 2024
+                  Festive & Wedding 2024
                 </span>
                 <h2 className="font-serif text-3xl sm:text-4xl text-[#800020] leading-tight mb-4">
-                  The Festive Sanctuary: <span className="italic font-light block">Diwali &amp; Celebration Edit</span>
+                  The Festive Sanctuary:{' '}
+                  <span className="italic font-light block">Diwali &amp; Celebration Edit</span>
                 </h2>
                 <p className="text-sm sm:text-base text-[#554745] leading-relaxed mb-8">
                   A bespoke curation of heirloom pooja accents, warm metallic tablewares, and hand-blended scents designed to transform celebration hosting into an art form.
@@ -400,13 +435,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div>
                   <button
                     type="button"
-                    onClick={() => {
-                      onSelectCategory('diyas-candle-holders');
-                      setCurrentView('shop');
-                    }}
-                    className="inline-flex items-center justify-center px-8 py-3.5 bg-[#800020] text-[#FFF9F2] text-xs font-semibold uppercase tracking-[0.16em] hover:bg-[#600018] shadow-sm hover:shadow transition-all duration-300"
+                    onClick={() => { onSelectCategory('diyas-candle-holders'); setCurrentView('shop'); }}
+                    className="inline-flex items-center justify-center px-8 py-3.5 bg-[#800020] text-[#FFF9F2] text-xs font-semibold uppercase tracking-[0.16em] hover:bg-[#600018] shadow-sm hover:shadow-md transition-all duration-300 btn-press"
                   >
                     Discover the Edit
+                    <span className="material-symbols-outlined text-[16px] ml-2">arrow_forward</span>
                   </button>
                 </div>
               </div>
@@ -415,10 +448,13 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 6. CUSTOMER FAVORITES / BESTSELLERS */}
+      {/* ─── 6. CUSTOMER FAVORITES / BESTSELLERS ─── */}
       <section className="w-full py-20 bg-[#F3E6D5]/35 border-y border-[#F3E6D5]" id="bestsellers">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12">
+          <div
+            ref={bestsellersRef as React.RefObject<HTMLDivElement>}
+            className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 reveal"
+          >
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#800020] block mb-2">
                 Evergreen Favorites
@@ -427,44 +463,51 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => {
-                onSelectCategory('all');
-                setCurrentView('shop');
-              }}
-              className="text-xs font-semibold uppercase tracking-[0.15em] text-[#800020] hover:text-[#D45060] mt-3 sm:mt-0 inline-flex items-center gap-1 transition-colors"
+              onClick={() => { onSelectCategory('all'); setCurrentView('shop'); }}
+              className="text-xs font-semibold uppercase tracking-[0.15em] text-[#800020] hover:text-[#D45060] mt-3 sm:mt-0 inline-flex items-center gap-1 transition-colors btn-press"
             >
-              View All Favorites <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              View All
+              <span className="material-symbols-outlined text-[16px] transition-transform group-hover:translate-x-1">arrow_forward</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div ref={bestsellersGridRef} className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 stagger-children">
             {customerFavorites.map(p => (
               <div
                 key={p.id}
-                className="group flex flex-col bg-[#FFF9F2] p-3 rounded-sm border border-[#F3E6D5] hover:shadow-md transition-all"
+                className="group flex flex-col bg-[#FFF9F2] p-2 sm:p-3 rounded-sm border border-[#F3E6D5] card-lift reveal"
               >
-                <div className="relative w-full aspect-[4/5] bg-[#F3E6D5] overflow-hidden mb-3">
+                <div className="relative w-full aspect-[4/5] bg-[#F3E6D5] overflow-hidden mb-3 img-zoom">
                   <img
                     alt={p.name}
                     src={p.images.main}
+                    loading="lazy"
+                    decoding="async"
                     onClick={() => onSelectProduct(p)}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                    className="w-full h-full object-cover cursor-pointer"
+                    width="300"
+                    height="375"
                   />
+                  {p.bestseller && (
+                    <span className="absolute top-2 left-2 bg-[#800020] text-[#FFF9F2] text-[9px] uppercase tracking-wider px-2 py-0.5 font-semibold">
+                      Bestseller
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => addToCart(p, 1)}
-                    className="absolute bottom-3 inset-x-3 py-2 bg-[#FFF9F2] text-[#800020] border border-[#800020]/20 opacity-0 group-hover:opacity-100 text-xs font-medium uppercase tracking-wider hover:bg-[#800020] hover:text-white transition-all duration-300"
+                    className="absolute bottom-2 inset-x-2 py-2 bg-[#FFF9F2] text-[#800020] border border-[#800020]/20 opacity-0 group-hover:opacity-100 text-xs font-medium uppercase tracking-wider hover:bg-[#800020] hover:text-white transition-all duration-300 translate-y-1 group-hover:translate-y-0 btn-press"
                   >
                     Add to Bag
                   </button>
                 </div>
-                <div className="flex flex-col px-1">
+                <div className="flex flex-col px-0.5">
                   <span className="text-[10px] tracking-[0.2em] uppercase text-[#7A6B69] mb-1">
                     {p.material}
                   </span>
                   <h3
                     onClick={() => onSelectProduct(p)}
-                    className="font-serif text-base text-[#800020] mb-1 line-clamp-1 cursor-pointer hover:underline"
+                    className="font-serif text-sm sm:text-base text-[#800020] mb-1 line-clamp-1 cursor-pointer hover:underline underline-offset-2"
                   >
                     {p.name}
                   </h3>
@@ -478,10 +521,13 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* 7. THE SAJAVAT JOURNAL PREVIEW */}
+      {/* ─── 7. THE SAJAVAT JOURNAL PREVIEW ─── */}
       <section className="w-full py-20 bg-[#FFF9F2]" id="journal">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+          <div
+            ref={journalTitleRef as React.RefObject<HTMLDivElement>}
+            className="flex flex-col md:flex-row md:items-end justify-between mb-12 reveal"
+          >
             <div>
               <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#800020] block mb-2">
                 Editorial &amp; Notes
@@ -493,50 +539,73 @@ export const HomePage: React.FC<HomePageProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div ref={journalGridRef} className="grid grid-cols-1 md:grid-cols-3 gap-8 stagger-children">
             {journalArticles.slice(0, 3).map(article => (
               <article
                 key={article.id}
                 onClick={() => onSelectArticle(article)}
-                className="flex flex-col group cursor-pointer"
+                className="flex flex-col group cursor-pointer reveal"
               >
-                <div className="relative w-full aspect-[16/10] overflow-hidden mb-4 bg-[#F3E6D5] rounded-sm">
+                <div className="relative w-full aspect-[16/10] overflow-hidden mb-4 bg-[#F3E6D5] rounded-sm img-zoom">
                   <img
                     alt={article.title}
                     src={article.image}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                    width="600"
+                    height="375"
                   />
+                  {/* Reading time badge */}
+                  <span className="absolute top-3 right-3 bg-[#FFF9F2]/90 text-[#800020] text-[10px] font-semibold px-2 py-1 tracking-wider uppercase">
+                    {article.readTime}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] font-medium text-[#7A6B69] tracking-wider uppercase mb-2">
                   <span className="text-[#800020] font-semibold">{article.categoryLabel}</span>
-                  <span>•</span>
-                  <span>{article.readTime}</span>
                 </div>
-                <h3 className="font-serif text-xl text-[#332927] group-hover:text-[#800020] transition-colors leading-snug mb-2">
+                <h3 className="font-serif text-xl text-[#332927] group-hover:text-[#800020] transition-colors duration-300 leading-snug mb-2">
                   {article.title}
                 </h3>
                 <p className="text-sm text-[#554745] line-clamp-2 mb-4 leading-relaxed">
                   {article.leadExcerpt}
                 </p>
-                <span className="text-xs font-semibold uppercase tracking-[0.15em] text-[#800020] group-hover:text-[#D45060] inline-flex items-center gap-1 transition-colors">
-                  Read Essay <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.15em] text-[#800020] group-hover:text-[#D45060] inline-flex items-center gap-1 transition-colors mt-auto">
+                  Read Essay
+                  <span className="material-symbols-outlined text-[14px] transition-transform duration-300 group-hover:translate-x-1">
+                    arrow_forward
+                  </span>
                 </span>
               </article>
             ))}
           </div>
+
+          <div className="mt-10 text-center">
+            <button
+              type="button"
+              onClick={() => setCurrentView('journal')}
+              className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#800020] hover:text-[#D45060] transition-colors btn-press underline-draw"
+            >
+              View All Essays
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* 8. NEWSLETTER CORRESPONDENCE */}
-      <section className="w-full py-20 bg-[#FFF9F2] border-t border-[#F3E6D5]">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#800020] block mb-2">
+      {/* ─── 8. NEWSLETTER CORRESPONDENCE ─── */}
+      <section className="w-full py-20 bg-[#800020] border-t border-[#600018]">
+        <div
+          ref={newsletterRef as React.RefObject<HTMLDivElement>}
+          className="max-w-2xl mx-auto px-4 sm:px-6 text-center reveal"
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-[0.25em] text-[#F3E6D5] block mb-2">
             Correspondence
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl text-[#800020] font-normal mb-3">
+          <h2 className="font-serif text-3xl sm:text-4xl text-[#FFF9F2] font-normal mb-3">
             A Little Inspiration, <span className="italic font-light">Delivered</span>
           </h2>
-          <p className="text-sm sm:text-base text-[#554745] leading-relaxed mb-8 max-w-lg mx-auto">
+          <p className="text-sm sm:text-base text-[#FFF9F2]/80 leading-relaxed mb-8 max-w-lg mx-auto">
             Receive intimate festive essays, seasonal atelier releases, and invitations to private styling previews.
           </p>
 
@@ -547,23 +616,23 @@ export const HomePage: React.FC<HomePageProps> = ({
               onChange={e => setNewsletterEmail(e.target.value)}
               placeholder="Enter your email address"
               required
-              className="flex-1 px-4 py-3 bg-[#FFF9F2] border border-[#F3E6D5] text-sm text-[#332927] placeholder:text-[#7A6B69]/60 focus:outline-none focus:border-[#800020] focus:ring-1 focus:ring-[#800020] rounded-none"
+              className="flex-1 px-4 py-3 bg-[#FFF9F2]/10 border border-[#FFF9F2]/30 text-sm text-white placeholder:text-[#FFF9F2]/50 focus:outline-none focus:border-[#F3E6D5] focus:bg-[#FFF9F2]/15 rounded-none transition-colors"
             />
             <button
               type="submit"
-              className="px-8 py-3 bg-[#800020] text-[#FFF9F2] text-xs font-semibold uppercase tracking-wider hover:bg-[#600018] transition-colors whitespace-nowrap shadow-sm"
+              className="px-8 py-3 bg-[#F3E6D5] text-[#800020] text-xs font-semibold uppercase tracking-wider hover:bg-white transition-colors whitespace-nowrap shadow-sm btn-press"
             >
               Subscribe
             </button>
           </form>
 
           {newsletterSubscribed && (
-            <div className="text-xs text-[#800020] font-medium py-1.5 px-3 bg-[#F3E6D5]/80 inline-block mb-3 rounded">
-              Thank you for joining our circle. A special welcome note with 10% coupon code is on its way.
+            <div className="text-xs text-[#F9E8B2] font-medium py-1.5 px-3 bg-[#FFF9F2]/10 inline-block mb-3 rounded animate-fadeIn">
+              ✓ Thank you for joining our circle. A welcome note with 10% coupon is on its way.
             </div>
           )}
 
-          <p className="text-xs text-[#7A6B69]">
+          <p className="text-xs text-[#FFF9F2]/60">
             We respect your calm. No spam, ever. Unsubscribe at any time.
           </p>
         </div>

@@ -1945,33 +1945,22 @@ function seedAdminUser(user: {
   adminUsersStore.set(record.id, record);
 }
 
-// Seed Default Credentials
+// Master Super Admin Configuration (Sample credentials configured via environment variables or clean defaults)
+const DEFAULT_ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+const DEFAULT_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@sajavat.com').trim().toLowerCase();
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@123';
+const DEFAULT_ADMIN_NAME = (process.env.ADMIN_NAME || 'Super Admin').trim();
+
+// Seed Single Master Super Admin Account
 seedAdminUser({
-  id: 'usr-admin-01',
-  username: 'admin',
-  email: 'admin@sajavat.com',
-  fullName: 'Rajeshwar Singh (Head Atelier Curator)',
+  id: 'usr-super-admin-01',
+  username: DEFAULT_ADMIN_USERNAME,
+  email: DEFAULT_ADMIN_EMAIL,
+  fullName: DEFAULT_ADMIN_NAME,
   role: 'super_admin',
-  plainPassword: 'SajavatAdmin2025!'
+  plainPassword: DEFAULT_ADMIN_PASSWORD
 });
 
-seedAdminUser({
-  id: 'usr-mgr-02',
-  username: 'manager',
-  email: 'manager@sajavat.com',
-  fullName: 'Pooja Sharma (Catalog & Inventory Liaison)',
-  role: 'inventory_manager',
-  plainPassword: 'SajavatManager2025!'
-});
-
-seedAdminUser({
-  id: 'usr-edit-03',
-  username: 'editor',
-  email: 'editor@sajavat.com',
-  fullName: 'Devika Nair (Atelier Journal Scribe)',
-  role: 'editor',
-  plainPassword: 'SajavatEditor2025!'
-});
 
 // Seed additional realistic orders for the CMS view
 const seedAdditionalOrders = () => {
@@ -2238,6 +2227,13 @@ function authenticateAdmin(req: AuthRequest, res: Response, next: () => void) {
   next();
 }
 
+function requireSuperAdmin(req: AuthRequest, res: Response, next: () => void) {
+  if (!req.adminUser || req.adminUser.role !== 'super_admin') {
+    return res.status(403).json({ error: 'Access denied: Super Admin authority is strictly required to make changes in the backend.' });
+  }
+  next();
+}
+
 function requireRoles(allowedRoles: AdminRole[]) {
   return (req: AuthRequest, res: Response, next: () => void) => {
     if (!req.adminUser || !allowedRoles.includes(req.adminUser.role)) {
@@ -2246,6 +2242,7 @@ function requireRoles(allowedRoles: AdminRole[]) {
     next();
   };
 }
+
 
 // ==========================================
 // AUTHENTICATION & CREDENTIALS ENDPOINTS
@@ -2393,7 +2390,7 @@ app.put('/api/auth/update-credentials', authenticateAdmin, (req: AuthRequest, re
 });
 
 // 5. List Staff Members (Restricted to Super Admin)
-app.get('/api/auth/users', authenticateAdmin, requireRoles(['super_admin']), (_req: AuthRequest, res: Response) => {
+app.get('/api/auth/users', authenticateAdmin, requireSuperAdmin, (_req: AuthRequest, res: Response) => {
   const usersList = Array.from(adminUsersStore.values()).map(u => ({
     id: u.id,
     username: u.username,
@@ -2407,7 +2404,7 @@ app.get('/api/auth/users', authenticateAdmin, requireRoles(['super_admin']), (_r
 });
 
 // 6. Create New Staff Admin Account (Restricted to Super Admin)
-app.post('/api/auth/users', authenticateAdmin, requireRoles(['super_admin']), (req: AuthRequest, res: Response) => {
+app.post('/api/auth/users', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { username, email, fullName, role, password } = req.body;
 
   if (!username || !email || !password || !fullName) {
@@ -2455,7 +2452,8 @@ app.post('/api/auth/users', authenticateAdmin, requireRoles(['super_admin']), (r
 });
 
 // 7. Delete Staff Account (Restricted to Super Admin)
-app.delete('/api/auth/users/:id', authenticateAdmin, requireRoles(['super_admin']), (req: AuthRequest, res: Response) => {
+app.delete('/api/auth/users/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+
   const { id } = req.params;
   const currentSession = req.adminUser!;
 
@@ -2563,7 +2561,7 @@ app.get('/api/cms/products', authenticateAdmin, (req: AuthRequest, res: Response
 });
 
 // Create New Product
-app.post('/api/cms/products', authenticateAdmin, requireRoles(['super_admin', 'inventory_manager']), (req: AuthRequest, res: Response) => {
+app.post('/api/cms/products', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const {
     name,
     sku,
@@ -2626,7 +2624,7 @@ app.post('/api/cms/products', authenticateAdmin, requireRoles(['super_admin', 'i
 });
 
 // Update Existing Product
-app.put('/api/cms/products/:id', authenticateAdmin, requireRoles(['super_admin', 'inventory_manager']), (req: AuthRequest, res: Response) => {
+app.put('/api/cms/products/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = products.findIndex(p => p.id === id);
 
@@ -2648,7 +2646,7 @@ app.put('/api/cms/products/:id', authenticateAdmin, requireRoles(['super_admin',
 });
 
 // Quick Stock Adjustment
-app.patch('/api/cms/products/:id/stock', authenticateAdmin, requireRoles(['super_admin', 'inventory_manager']), (req: AuthRequest, res: Response) => {
+app.patch('/api/cms/products/:id/stock', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { stock, delta } = req.body;
 
@@ -2667,7 +2665,7 @@ app.patch('/api/cms/products/:id/stock', authenticateAdmin, requireRoles(['super
 });
 
 // Toggle Featured / Bestseller
-app.patch('/api/cms/products/:id/toggle-featured', authenticateAdmin, requireRoles(['super_admin', 'inventory_manager']), (req: AuthRequest, res: Response) => {
+app.patch('/api/cms/products/:id/toggle-featured', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { field } = req.body; // 'featured' | 'bestseller'
 
@@ -2686,7 +2684,8 @@ app.patch('/api/cms/products/:id/toggle-featured', authenticateAdmin, requireRol
 });
 
 // Delete Product
-app.delete('/api/cms/products/:id', authenticateAdmin, requireRoles(['super_admin']), (req: AuthRequest, res: Response) => {
+app.delete('/api/cms/products/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+
   const { id } = req.params;
   const index = products.findIndex(p => p.id === id);
 
@@ -2732,7 +2731,7 @@ app.get('/api/cms/orders', authenticateAdmin, (req: AuthRequest, res: Response) 
 });
 
 // Update Order Status & Fulfillment Tracking
-app.patch('/api/cms/orders/:id/status', authenticateAdmin, requireRoles(['super_admin', 'inventory_manager']), (req: AuthRequest, res: Response) => {
+app.patch('/api/cms/orders/:id/status', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { status, trackingCarrier, waybillNumber, stepDescription } = req.body;
 
@@ -2793,7 +2792,7 @@ app.get('/api/cms/inquiries', authenticateAdmin, (req: AuthRequest, res: Respons
 });
 
 // Update Inquiry Status & Staff Notes
-app.patch('/api/cms/inquiries/:id/status', authenticateAdmin, (req: AuthRequest, res: Response) => {
+app.patch('/api/cms/inquiries/:id/status', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { status, staffNotes } = req.body;
 
@@ -2814,7 +2813,7 @@ app.patch('/api/cms/inquiries/:id/status', authenticateAdmin, (req: AuthRequest,
 });
 
 // Delete Inquiry
-app.delete('/api/cms/inquiries/:id', authenticateAdmin, requireRoles(['super_admin']), (req: AuthRequest, res: Response) => {
+app.delete('/api/cms/inquiries/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = contactInquiries.findIndex(i => i.id === id || i.referenceId === id);
 
@@ -2826,12 +2825,13 @@ app.delete('/api/cms/inquiries/:id', authenticateAdmin, requireRoles(['super_adm
   res.json({ success: true, message: 'Inquiry deleted.' });
 });
 
+
 // ==========================================
 // CMS JOURNAL & EDITORIAL ARTICLES
 // ==========================================
 
 // Create Journal Article
-app.post('/api/cms/journal', authenticateAdmin, requireRoles(['super_admin', 'editor']), (req: AuthRequest, res: Response) => {
+app.post('/api/cms/journal', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { title, category, categoryLabel, readTime, author, authorTitle, leadExcerpt, content, image } = req.body;
 
   if (!title || !leadExcerpt) {
@@ -2861,7 +2861,7 @@ app.post('/api/cms/journal', authenticateAdmin, requireRoles(['super_admin', 'ed
 });
 
 // Update Journal Article
-app.put('/api/cms/journal/:id', authenticateAdmin, requireRoles(['super_admin', 'editor']), (req: AuthRequest, res: Response) => {
+app.put('/api/cms/journal/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = journalArticles.findIndex(a => a.id === id);
 
@@ -2878,7 +2878,7 @@ app.put('/api/cms/journal/:id', authenticateAdmin, requireRoles(['super_admin', 
 });
 
 // Delete Journal Article
-app.delete('/api/cms/journal/:id', authenticateAdmin, requireRoles(['super_admin', 'editor']), (req: AuthRequest, res: Response) => {
+app.delete('/api/cms/journal/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = journalArticles.findIndex(a => a.id === id);
 
@@ -2912,7 +2912,7 @@ app.get('/api/cms/reviews', authenticateAdmin, (_req: AuthRequest, res: Response
 });
 
 // Toggle Review Verification
-app.patch('/api/cms/reviews/:id/verify', authenticateAdmin, requireRoles(['super_admin', 'editor']), (req: AuthRequest, res: Response) => {
+app.patch('/api/cms/reviews/:id/verify', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   let targetReview: Review | undefined;
 
@@ -2933,7 +2933,7 @@ app.patch('/api/cms/reviews/:id/verify', authenticateAdmin, requireRoles(['super
 });
 
 // Delete Review
-app.delete('/api/cms/reviews/:id', authenticateAdmin, requireRoles(['super_admin']), (req: AuthRequest, res: Response) => {
+app.delete('/api/cms/reviews/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   let deleted = false;
 
@@ -3008,7 +3008,7 @@ app.get('/api/settings', (_req: Request, res: Response) => {
 });
 
 // Admin Update Site Settings
-app.put('/api/cms/settings', authenticateAdmin, requireRoles(['super_admin', 'editor']), (req: AuthRequest, res: Response) => {
+app.put('/api/cms/settings', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   siteSettings = {
     ...siteSettings,
     ...req.body
@@ -3017,7 +3017,8 @@ app.put('/api/cms/settings', authenticateAdmin, requireRoles(['super_admin', 'ed
 });
 
 // Admin Quick Image Replacer for any product
-app.patch('/api/cms/products/:id/image', authenticateAdmin, requireRoles(['super_admin', 'inventory_manager']), (req: AuthRequest, res: Response) => {
+app.patch('/api/cms/products/:id/image', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+
   const { id } = req.params;
   const { imageUrl, imageKey } = req.body; // imageKey: 'main' | 'lifestyle' | 'waterView' | 'engraving' | 'giftBox'
 
@@ -3184,8 +3185,8 @@ app.get('/api/seo', (_req: Request, res: Response) => {
 app.get(
   '/api/cms/seo',
   authenticateAdmin,
-  requireRoles(['super_admin', 'editor']),
   (_req: AuthRequest, res: Response) => {
+
     const audit = runSeoAudit(fullSeoData, products, journalArticles);
     res.json({
       success: true,
@@ -3199,7 +3200,7 @@ app.get(
 app.put(
   '/api/cms/seo',
   authenticateAdmin,
-  requireRoles(['super_admin', 'editor']),
+  requireSuperAdmin,
   (req: AuthRequest, res: Response) => {
     const update = req.body;
     if (!update || typeof update !== 'object') {
@@ -3229,7 +3230,6 @@ app.put(
 app.get(
   '/api/cms/seo/audit',
   authenticateAdmin,
-  requireRoles(['super_admin', 'editor']),
   (_req: AuthRequest, res: Response) => {
     const audit = runSeoAudit(fullSeoData, products, journalArticles);
     res.json({ success: true, audit });
@@ -3245,7 +3245,7 @@ app.get('/api/cms/seo/redirects', authenticateAdmin, (_req: AuthRequest, res: Re
 app.post(
   '/api/cms/seo/redirects',
   authenticateAdmin,
-  requireRoles(['super_admin', 'editor']),
+  requireSuperAdmin,
   (req: AuthRequest, res: Response) => {
     const { sourceUrl, targetUrl, statusCode, note } = req.body;
     if (!sourceUrl || !targetUrl) {
@@ -3273,7 +3273,7 @@ app.post(
 app.put(
   '/api/cms/seo/redirects/:id',
   authenticateAdmin,
-  requireRoles(['super_admin', 'editor']),
+  requireSuperAdmin,
   (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const index = fullSeoData.redirects.findIndex((r: any) => r.id === id);
@@ -3290,7 +3290,7 @@ app.put(
 app.delete(
   '/api/cms/seo/redirects/:id',
   authenticateAdmin,
-  requireRoles(['super_admin', 'editor']),
+  requireSuperAdmin,
   (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     fullSeoData.redirects = fullSeoData.redirects.filter((r: any) => r.id !== id);

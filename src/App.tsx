@@ -23,6 +23,8 @@ import { JournalPage } from './pages/JournalPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { CmsPage } from './pages/CmsPage';
+import { StoreMapPage } from './pages/StoreMapPage';
+
 
 
 function AppContent() {
@@ -73,6 +75,8 @@ function AppContent() {
       });
   };
 
+  // ─── Effect 1: Fetch all data ONCE on mount ─────────────────────────────────
+  // IMPORTANT: Empty dependency array [] so this never re-triggers due to state updates.
   useEffect(() => {
     refreshProducts();
     refreshSettings();
@@ -92,7 +96,12 @@ function AppContent() {
       .catch((err) => {
         console.warn('Using client-side journal fallback:', err);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // <-- [] = run once on mount only
 
+  // ─── Effect 2: Hash-based routing + keyboard shortcut ────────────────────────
+  // Re-registers when products/journalArticles load so deep-linked URLs resolve.
+  useEffect(() => {
     // Hash and URL based semantic routing
     const checkHashAndRoute = () => {
       const rawHash = window.location.hash || '';
@@ -197,6 +206,7 @@ function AppContent() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [products, journalArticles]);
+
 
   // View navigation helper that ensures top scroll and seamless routing
   const navigateToView = (view: string) => {
@@ -414,6 +424,10 @@ function AppContent() {
             onSelectCategory={handleSelectCategory}
             initialTab={contactTab}
           />
+        )}
+
+        {currentView === 'store-map' && (
+          <StoreMapPage setCurrentView={navigateToView} />
         )}
       </main>
 

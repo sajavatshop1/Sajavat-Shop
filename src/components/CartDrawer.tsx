@@ -215,18 +215,46 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ setCurrentView }) => {
             <button
               type="button"
               onClick={handleCheckout}
-              className="w-full bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] py-3.5 px-5 rounded-sm text-xs uppercase tracking-[0.15em] font-semibold flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all"
+              className="w-full bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] py-3.5 px-5 rounded-sm text-xs uppercase tracking-[0.15em] font-semibold flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all btn-press"
             >
-              <span>Proceed to Ritual Checkout</span>
+              <span className="material-symbols-outlined text-[16px]">lock</span>
+              <span>Secure Checkout</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
+
+            {/* ── Security & Trust Strip ── */}
+            <div className="border border-[#E6D7C3] rounded-sm bg-[#F3E6D5]/30 px-3 py-2.5">
+              <div className="flex items-center justify-center gap-1.5 mb-2">
+                <span className="material-symbols-outlined text-[14px] text-[#2D7A2D]">verified_user</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#2D7A2D]">100% Safe &amp; Secure Checkout</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 flex-wrap mb-2">
+                {['UPI', 'Visa', 'MasterCard', 'Net Banking', 'COD'].map(method => (
+                  <span key={method} className="text-[9px] font-bold bg-white border border-[#E6D7C3] text-[#332927] px-2 py-0.5 rounded shadow-sm">
+                    {method}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center justify-center gap-4">
+                {[
+                  { icon: 'lock', label: '256-bit SSL' },
+                  { icon: 'replay', label: '7-Day Returns' },
+                  { icon: 'workspace_premium', label: '100% Genuine' },
+                ].map(b => (
+                  <div key={b.label} className="flex items-center gap-1 text-[#554745]">
+                    <span className="material-symbols-outlined text-[12px]">{b.icon}</span>
+                    <span className="text-[9px] font-medium tracking-wide uppercase">{b.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <button
               type="button"
               onClick={() => setIsCartOpen(false)}
               className="text-center text-[10px] uppercase tracking-widest text-[#7A6B69] hover:text-[#800020] transition-colors py-1"
             >
-              Continue Browsing Atelier
+              Continue Browsing
             </button>
           </div>
         )}
