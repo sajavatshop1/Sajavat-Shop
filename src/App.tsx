@@ -27,8 +27,21 @@ import { StoreMapPage } from './pages/StoreMapPage';
 
 
 
+function getStoredProducts(): Product[] {
+  try {
+    const saved = localStorage.getItem('sajavat_local_products');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return INITIAL_PRODUCTS;
+}
+
 function AppContent() {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(getStoredProducts);
   const [journalArticles, setJournalArticles] = useState<JournalArticle[]>(INITIAL_JOURNAL_ARTICLES);
   const [currentView, setCurrentView] = useState<string>(() => {
     if (typeof window === 'undefined') return 'home';
@@ -53,21 +66,29 @@ function AppContent() {
   });
   const [contactTab, setContactTab] = useState<'form' | 'care' | 'shipping' | 'returns' | 'faqs'>('form');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedProduct, setSelectedProduct] = useState<Product>(INITIAL_PRODUCTS[0]);
+  const [selectedProduct, setSelectedProduct] = useState<Product>(() => getStoredProducts()[0] || INITIAL_PRODUCTS[0]);
   const [selectedArticle, setSelectedArticle] = useState<JournalArticle>(INITIAL_JOURNAL_ARTICLES[0]);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
-  const [siteSettings, setSiteSettings] = useState<SiteSettings | undefined>(undefined);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | undefined>(() => {
+    try {
+      const saved = localStorage.getItem('sajavat_site_settings');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return undefined;
+  });
 
   // Fetch site settings
   const refreshSettings = () => {
     fetch('/api/settings')
       .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to load settings');
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (res.ok && ct.includes('application/json')) return res.json();
+        throw new Error('Not JSON or unavailable');
       })
       .then((data) => {
         if (data.settings) {
           setSiteSettings(data.settings);
+          localStorage.setItem('sajavat_site_settings', JSON.stringify(data.settings));
         }
       })
       .catch((err) => {
@@ -80,18 +101,23 @@ function AppContent() {
     refreshSettings();
     fetch('/api/products')
       .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to load products');
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (res.ok && ct.includes('application/json')) return res.json();
+        throw new Error('Not JSON or unavailable');
       })
       .then((data) => {
         const productList = Array.isArray(data) ? data : data?.products;
         if (Array.isArray(productList) && productList.length > 0) {
           setProducts(productList);
+          localStorage.setItem('sajavat_local_products', JSON.stringify(productList));
           setSelectedProduct((prev) => productList.find((p: Product) => p.id === prev.id) || productList[0]);
         }
       })
       .catch((err) => {
         console.warn('Using client-side products catalogue fallback:', err);
+        const stored = getStoredProducts();
+        setProducts(stored);
+        setSelectedProduct((prev) => stored.find((p: Product) => p.id === prev.id) || stored[0]);
       });
   };
 
@@ -103,8 +129,9 @@ function AppContent() {
 
     fetch('/api/journal')
       .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to load journal articles');
+        const ct = (res.headers.get('content-type') || '').toLowerCase();
+        if (res.ok && ct.includes('application/json')) return res.json();
+        throw new Error('Not JSON or unavailable');
       })
       .then((data) => {
         const articleList = Array.isArray(data) ? data : data?.articles;
