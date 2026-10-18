@@ -44,7 +44,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
   };
 
   const showAnnouncement = siteSettings ? siteSettings.announcementEnabled : true;
-  const announcementText = siteSettings?.announcementText || 'Complimentary Shipping on Orders Over ₹2,999 • Insured Packing • 7-Day Easy Returns';
+  const announcementText = siteSettings?.announcementText || 'Complimentary Shipping on Orders Over ₹2,999 • Insured Transit Packaging • 100% Pure Virgin Brass';
   const announcementBg = siteSettings?.announcementBg || '#800020';
   const announcementTextColor = siteSettings?.announcementTextColor || '#FFF9F2';
   const logoUrl = siteSettings?.logoUrl || '/Sajavat.svg';
@@ -80,8 +80,8 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
               100% Safe &amp; Encrypted Payments
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[13px] text-[#800020]">replay</span>
-              7-Day Easy Returns
+              <span className="material-symbols-outlined text-[13px] text-[#2D7A2D]">workspace_premium</span>
+              100% Pure Virgin Brass
             </span>
           </div>
           <div className="flex items-center gap-4 text-[#554745]">
@@ -90,10 +90,14 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
               Mon–Sat 10am–7pm
             </span>
             <span className="text-[#7A6B69]">·</span>
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[13px]">call</span>
-              +91 98765 43210
-            </span>
+            <button
+              type="button"
+              onClick={() => { window.location.hash = '#admin'; setCurrentView('cms'); }}
+              className="flex items-center gap-1 text-[#800020] hover:text-[#550010] transition-colors font-bold cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">admin_panel_settings</span>
+              Admin Backend
+            </button>
           </div>
         </div>
       </div>
@@ -217,7 +221,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
                         {[
                           { icon: 'verified', text: 'Every piece is hand-inspected before dispatch' },
                           { icon: 'verified_user', text: 'SSL-encrypted checkout, always' },
-                          { icon: 'replay', text: '7-day no-questions-asked returns' },
+                          { icon: 'handshake', text: 'Artisanal heirloom craft & transit insurance' },
                           { icon: 'local_shipping', text: 'Free insured shipping over ₹2,999' },
                           { icon: 'workspace_premium', text: '100% genuine pure brass & kansa' },
                         ].map((item, i) => (
@@ -310,6 +314,16 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
 
             <button
               type="button"
+              aria-label="Admin Backend Portal"
+              title="Admin Backend & Inventory Management"
+              onClick={() => { window.location.hash = '#admin'; setCurrentView('cms'); }}
+              className="tap-target text-[#800020] hover:text-[#550010] bg-[#F3E6D5]/60 hover:bg-[#F3E6D5] rounded-full p-1.5 flex items-center transition-colors btn-press cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+            </button>
+
+            <button
+              type="button"
               aria-label="Shopping Bag"
               onClick={() => setIsCartOpen(true)}
               className="tap-target relative hover:text-[#800020] transition-colors p-1.5 flex items-center btn-press"
@@ -364,7 +378,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
             <div className="border-t border-[#F3E6D5] pt-3 pb-2 grid grid-cols-2 gap-2">
               {[
                 { icon: 'verified_user', text: 'Secure Checkout' },
-                { icon: 'replay', text: '7-Day Returns' },
+                { icon: 'inventory_2', text: 'Insured Transit' },
                 { icon: 'local_shipping', text: 'Free Ship ₹2999+' },
                 { icon: 'workspace_premium', text: '100% Genuine' },
               ].map((b, i) => (
@@ -380,6 +394,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
               { label: 'The Journal', view: 'journal', icon: 'article' },
               { label: 'Track My Order', view: null as string | null, icon: 'local_shipping', action: () => setIsOrderLookupOpen(true) },
               { label: 'Customer Care', view: 'contact', icon: 'headset_mic', action: null as (() => void) | null },
+              { label: 'Admin Backend Portal', view: 'cms', icon: 'admin_panel_settings', action: () => { window.location.hash = '#admin'; setCurrentView('cms'); } },
             ].map(item => (
               <button
                 key={item.label}

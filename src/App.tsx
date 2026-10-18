@@ -30,7 +30,27 @@ import { StoreMapPage } from './pages/StoreMapPage';
 function AppContent() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [journalArticles, setJournalArticles] = useState<JournalArticle[]>(INITIAL_JOURNAL_ARTICLES);
-  const [currentView, setCurrentView] = useState<string>('home');
+  const [currentView, setCurrentView] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const h = (window.location.hash || '').toLowerCase();
+    const p = (window.location.pathname || '').toLowerCase();
+    if (
+      h === '#admin' ||
+      h === '#cms' ||
+      h === '#/admin' ||
+      h === '#/cms' ||
+      h === '#login' ||
+      h === '#/login' ||
+      h === '#portal' ||
+      h === '#/portal' ||
+      p === '/admin' ||
+      p === '/cms' ||
+      p === '/login'
+    ) {
+      return 'cms';
+    }
+    return 'home';
+  });
   const [contactTab, setContactTab] = useState<'form' | 'care' | 'shipping' | 'returns' | 'faqs'>('form');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedProduct, setSelectedProduct] = useState<Product>(INITIAL_PRODUCTS[0]);
@@ -313,6 +333,7 @@ function AppContent() {
         <CmsPage
           setCurrentView={navigateToView}
           onSelectProduct={handleSelectProduct}
+          onProductsUpdated={refreshProducts}
         />
         <Toast />
       </div>
@@ -423,6 +444,7 @@ function AppContent() {
             setCurrentView={navigateToView}
             onSelectCategory={handleSelectCategory}
             initialTab={contactTab}
+            siteSettings={siteSettings}
           />
         )}
 

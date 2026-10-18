@@ -55,9 +55,10 @@ import { CmsSeoSection } from '../components/cms/CmsSeoSection';
 interface CmsPageProps {
   setCurrentView: (view: string) => void;
   onSelectProduct?: (product: Product) => void;
+  onProductsUpdated?: () => void;
 }
 
-export function CmsPage({ setCurrentView }: CmsPageProps) {
+export function CmsPage({ setCurrentView, onProductsUpdated }: CmsPageProps) {
   // Auth state
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('sajavat_cms_token'));
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(() => {
@@ -246,7 +247,7 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
       // Parallel data fetching
       const [metricsRes, prodsRes, ordersRes, inqRes, artRes, revRes, settRes] = await Promise.all([
         fetch('/api/cms/metrics', { headers }),
-        fetch('/api/products'),
+        fetch('/api/cms/products', { headers }),
         fetch('/api/cms/orders', { headers }),
         fetch('/api/cms/inquiries', { headers }),
         fetch('/api/journal'),
@@ -254,21 +255,44 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
         fetch('/api/settings')
       ]);
 
-      if (metricsRes.ok) setDashboardMetrics(await metricsRes.json());
-      if (prodsRes.ok) setProductsList(await prodsRes.json());
-      if (ordersRes.ok) setOrdersList(await ordersRes.json());
-      if (inqRes.ok) setInquiriesList(await inqRes.json());
-      if (artRes.ok) setArticlesList(await artRes.json());
-      if (revRes.ok) setReviewsList(await revRes.json());
-      if (settRes.ok) setSiteSettings(await settRes.json());
+      if (metricsRes.ok) {
+        const m = await metricsRes.json();
+        setDashboardMetrics(m.metrics || m);
+      }
+      if (prodsRes.ok) {
+        const p = await prodsRes.json();
+        setProductsList(Array.isArray(p) ? p : (p.products || []));
+      }
+      if (ordersRes.ok) {
+        const o = await ordersRes.json();
+        setOrdersList(Array.isArray(o) ? o : (o.orders || []));
+      }
+      if (inqRes.ok) {
+        const i = await inqRes.json();
+        setInquiriesList(Array.isArray(i) ? i : (i.inquiries || []));
+      }
+      if (artRes.ok) {
+        const a = await artRes.json();
+        setArticlesList(Array.isArray(a) ? a : (a.articles || []));
+      }
+      if (revRes.ok) {
+        const r = await revRes.json();
+        setReviewsList(Array.isArray(r) ? r : (r.reviews || []));
+      }
+      if (settRes.ok) {
+        const s = await settRes.json();
+        setSiteSettings(s.settings || s);
+      }
 
-      // If user is super admin, also fetch staff users
-      if (currentUser?.role === 'super_admin') {
+      // Attempt to load staff users (succeeds for super_admin)
+      try {
         const staffRes = await fetch('/api/auth/users', { headers });
         if (staffRes.ok) {
           const staffData = await staffRes.json();
           setStaffUsers(staffData.users || []);
         }
+      } catch {
+        // non-critical if unauthorized or error
       }
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -312,11 +336,6 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
     }
   };
 
-  // Fill sample super admin credentials
-  const fillSampleCredentials = () => {
-    setLoginIdentifier('admin@sajavat.com');
-    setLoginPassword('Admin@123');
-  };
 
 
   // Sign out handler
@@ -344,7 +363,8 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
     if (!authToken) return;
 
     try {
-      const res = await fetch('/api/products', {
+      setIsLoading(true);
+      const res = await fetch('/api/cms/products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -356,9 +376,12 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save product');
 
-      setProductsList((prev) => [data, ...prev]);
+      const savedProduct = data.product || data;
+      setProductsList((prev) => [savedProduct, ...prev]);
       setIsNewProductModalOpen(false);
-      showNotification(`Piece "${data.name}" successfully added to boutique catalog.`);
+      showNotification(`Piece "${savedProduct.name}" successfully added to boutique catalog.`);
+      onProductsUpdated?.();
+
       // Reset form
       setNewProd({
         name: '',
@@ -374,8 +397,8 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
         stock: 15,
         featured: true,
         bestseller: false,
-        rating: 4.9,
-        reviewsCount: 18,
+        rating: 5.0,
+        reviewsCount: 1,
         description: '',
         images: {
           main: 'https://images.unsplash.com/photo-1606293926075-69a00dbfde81?auto=format&fit=crop&w=800&q=80',
@@ -390,6 +413,8 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
       });
     } catch (err: any) {
       showNotification(err.message, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -399,7 +424,8 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
     if (!editingProduct || !authToken) return;
 
     try {
-      const res = await fetch(`/api/products/${editingProduct.id}`, {
+      setIsLoading(true);
+      const res = await fetch(`/api/cms/products/${editingProduct.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -411,23 +437,28 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update product');
 
-      setProductsList((prev) => prev.map((p) => (p.id === data.id ? data : p)));
+      const updated = data.product || data;
+      setProductsList((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
       setEditingProduct(null);
-      showNotification(`Item "${data.name}" successfully updated.`);
+      showNotification(`Item "${updated.name}" successfully updated.`);
+      onProductsUpdated?.();
     } catch (err: any) {
       showNotification(err.message, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Handle delete product
   const handleDeleteProduct = async (id: string, name: string) => {
     if (!authToken) return;
-    if (!window.confirm(`Are you certain you wish to archive and delete "${name}" from the store catalog?`)) {
+    if (!window.confirm(`Are you certain you wish to delete "${name}" from the store catalog?`)) {
       return;
     }
 
     try {
-      const res = await fetch(`/api/products/${id}`, {
+      setIsLoading(true);
+      const res = await fetch(`/api/cms/products/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${authToken}` }
       });
@@ -438,9 +469,12 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
       }
 
       setProductsList((prev) => prev.filter((p) => p.id !== id));
-      showNotification(`Archived and removed "${name}" from active collection.`);
+      showNotification(`Successfully deleted "${name}" from store catalogue.`);
+      onProductsUpdated?.();
     } catch (err: any) {
       showNotification(err.message, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -925,11 +959,10 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
                   <input
                     type="text"
                     required
+                    autoComplete="username"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="admin@sajavat.com or admin"
-                    className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#991B1B] focus:ring-2 focus:ring-[#D4AF37]/30 transition-all shadow-xs"
-
+                    className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-4 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-[#991B1B] focus:ring-2 focus:ring-[#D4AF37]/30 transition-all shadow-xs"
                   />
                 </div>
               </div>
@@ -946,10 +979,10 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
+                    autoComplete="current-password"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-10 py-2.5 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:border-[#991B1B] focus:ring-2 focus:ring-[#D4AF37]/30 transition-all shadow-xs"
+                    className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-10 py-2.5 text-sm text-stone-900 focus:outline-none focus:border-[#991B1B] focus:ring-2 focus:ring-[#D4AF37]/30 transition-all shadow-xs"
                   />
                   <button
                     type="button"
@@ -979,40 +1012,6 @@ export function CmsPage({ setCurrentView }: CmsPageProps) {
                 )}
               </button>
             </form>
-
-            {/* Sample Super Admin Credentials Card */}
-            <div className="mt-8 pt-6 border-t border-stone-200">
-              <div className="bg-[#FFFDF7] border border-[#D4AF37]/35 rounded-xl p-4 text-left shadow-xs">
-                <div className="flex items-center justify-between mb-2.5">
-                  <div className="flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-[#991B1B]" />
-                    <span className="text-[11px] uppercase tracking-wider text-stone-800 font-bold">
-                      Sample Super Admin Credentials
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={fillSampleCredentials}
-                    className="text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-lg bg-[#991B1B]/10 hover:bg-[#991B1B] text-[#991B1B] hover:text-white transition-all cursor-pointer border border-[#991B1B]/20"
-                  >
-                    Auto Fill
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200">
-                    <span className="text-[10px] uppercase text-stone-500 block font-semibold">User ID / Email</span>
-                    <code className="text-stone-900 font-bold text-xs select-all">admin@sajavat.com</code>
-                  </div>
-                  <div className="bg-white/80 p-2.5 rounded-lg border border-stone-200">
-                    <span className="text-[10px] uppercase text-stone-500 block font-semibold">Password</span>
-                    <code className="text-stone-900 font-bold text-xs select-all">Admin@123</code>
-                  </div>
-                </div>
-                <p className="text-[10px] text-stone-600 mt-2.5 text-center font-medium">
-                  Super Admin Authority: Exclusive rights to modify products, stock, orders, journal, settings & staff.
-                </p>
-              </div>
-            </div>
           </div>
 
         </div>

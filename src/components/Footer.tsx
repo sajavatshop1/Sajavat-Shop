@@ -257,7 +257,7 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView, onSelectCategory
             {[
               { icon: 'lock', title: '256-bit SSL', sub: 'Bank-grade encryption on every page' },
               { icon: 'verified_user', title: 'Secure Payments', sub: 'Razorpay PCI-DSS Level 1 certified' },
-              { icon: 'replay', title: '7-Day Returns', sub: 'No-questions-asked return policy' },
+              { icon: 'handshake', title: 'Heirloom Guarantee', sub: 'Hand-cast artisan authenticity' },
               { icon: 'local_shipping', title: 'Insured Shipping', sub: 'All parcels insured & tracked' },
               { icon: 'workspace_premium', title: '100% Authentic', sub: 'Hand-inspected before dispatch' },
               { icon: 'support_agent', title: 'Concierge Support', sub: 'Mon–Sat 10am–7pm IST' },
@@ -328,6 +328,14 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView, onSelectCategory
                   {link.label}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => { window.location.hash = '#admin'; setCurrentView('cms'); }}
+                className="hover:text-white transition-colors whitespace-nowrap font-bold text-[#F9E8B2] flex items-center gap-1 border-b border-[#F9E8B2]/40"
+              >
+                <span className="material-symbols-outlined text-[13px]">admin_panel_settings</span>
+                Admin Backend Control
+              </button>
             </div>
           </div>
 

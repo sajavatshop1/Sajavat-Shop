@@ -1,0 +1,326 @@
+[
+  {
+    "id": "ORD-SJ-2026-4483",
+    "orderNumber": "SJ-2026-4483",
+    "createdAt": "2026-10-17T15:59:15.603Z",
+    "status": "paid",
+    "customer": {
+      "fullName": "Nandini Singhania",
+      "email": "nandini.s@singhania-heritage.com",
+      "phone": "+91 98110 99482",
+      "address": "Bungalow 7, Amrita Shergill Marg",
+      "city": "New Delhi",
+      "state": "Delhi",
+      "pincode": "110003",
+      "landmark": "Near Lodhi Gardens"
+    },
+    "shipping": {
+      "speed": "priority",
+      "cost": 250,
+      "trackingCarrier": "BlueDart Air Apex",
+      "waybillNumber": "BLUEDART-99381023",
+      "estimatedDelivery": "Oct 15, 2026"
+    },
+    "gift": {
+      "isGift": true,
+      "recipient": "Dev & Natasha",
+      "occasion": "Royal Wedding Gifting",
+      "handwrittenNote": "Warmest blessings on your sacred union. May this heirloom brass cast an eternal festive glow."
+    },
+    "items": [
+      {
+        "productId": "kamal-peacock-thali",
+        "name": "Kamal-Peacock Embossed Brass Puja Thali",
+        "finish": "Antique Heirloom Brass",
+        "price": 2899,
+        "quantity": 2,
+        "giftWrap": true,
+        "image": "https://images.unsplash.com/photo-1606293926075-69a00dbfde81?auto=format&fit=crop&w=800&q=80"
+      },
+      {
+        "productId": "gulab-chandan-candle",
+        "name": "Gulab & Chandan Artisanal Ceramic Candle",
+        "price": 1299,
+        "quantity": 2,
+        "giftWrap": true,
+        "image": "https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=800&q=80"
+      }
+    ],
+    "pricing": {
+      "subtotal": 8396,
+      "discount": 839,
+      "couponApplied": "SAJAVAT10",
+      "giftWrapTotal": 300,
+      "shippingCost": 250,
+      "estimatedGstIncluded": 1240,
+      "total": 8107
+    },
+    "payment": {
+      "method": "upi",
+      "status": "captured",
+      "transactionId": "TXN-UPI-9921049281",
+      "utrNumber": "UTR-HDFC-9938120",
+      "paidAt": "2026-10-17T15:59:15.603Z",
+      "verificationHash": "verified_upi_hash_4483"
+    },
+    "trackingTimeline": [
+      {
+        "step": "Order Placed & UPI Payment Verified",
+        "timestamp": "14 hours ago",
+        "description": "Payment authorized via HDFC UPI Gateway.",
+        "completed": true
+      },
+      {
+        "step": "Artisan Workshop Allocation",
+        "timestamp": "10 hours ago",
+        "description": "Assigned to Master Sand-Casters for brass polishing and velvet box packing.",
+        "completed": true,
+        "current": true
+      }
+    ]
+  },
+  {
+    "id": "ORD-SJ-2026-4482",
+    "orderNumber": "SJ-2026-4482",
+    "createdAt": "2026-10-16T17:59:15.595Z",
+    "status": "processing",
+    "customer": {
+      "fullName": "Aarav Mehra",
+      "email": "aarav.mehra@atelier-studio.in",
+      "phone": "+91 98201 44829",
+      "address": "Flat 402, Mayfair Palms, 18th Road, Khar West",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400052",
+      "landmark": "Near Khar Gymkhana"
+    },
+    "shipping": {
+      "speed": "express",
+      "cost": 0,
+      "trackingCarrier": "BlueDart Apex Express",
+      "waybillNumber": "BLUEDART-88294109",
+      "estimatedDelivery": "Oct 14, 2026"
+    },
+    "gift": {
+      "isGift": true,
+      "recipient": "Rohit & Ananya Verma",
+      "occasion": "Housewarming & Deepotsav Blessings",
+      "handwrittenNote": "May your lovely new abode shine with joy, serenity, and golden warmth! With all our affection, Aarav & Meera."
+    },
+    "items": [
+      {
+        "productId": "mayura-brass-urli",
+        "name": "Mayura Brass Urli with Floating Diya Set",
+        "finish": "Hand-Aged Patina Brass",
+        "price": 3450,
+        "quantity": 1,
+        "giftWrap": true,
+        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuAwqaCtGR5f2YGRZ0vFu29AI8sdvNknypepJqIDvsmW6kFGrXZ77COgEPFQgapONq6KWf5zNIubYRDzCOEhen7aOVw47TjjSJdtE77ugBGQcWbEYr11c4AUK5UJbt-ywkbYBCWgPnlIm42QPJ8yFRNbFeiQxinvll3eh5CmSTTptDuD08RzhCSn2NLKItYjsFaTox2O4fRFOn4I4Kqg5lPlTLaB0dBHhU2Z5U0nEW9yBMsu2ORspEQcZg"
+      },
+      {
+        "productId": "gulab-chandan-candle",
+        "name": "Gulab & Chandan Artisanal Ceramic Candle",
+        "price": 1299,
+        "quantity": 2,
+        "giftWrap": false,
+        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuCEaBzhxpGSwDS9OrmUCVBXnnpDi6yNdu5mlsGyIGWO29pE-aZAa_9cRbJGUWBBpdDFd-kOWesq8KNuJogn86UGwZl0c19QcKHOX0uC-98ZV3pZb0ezyasLhThluyZp-NyEKuXplMAzaD1fM4omv5J5c9_u4ss45QeDjTc6YpHIsMV9F7gFSqfi9xLBi0YeroR_wKLT7swoP2UcZRerxIFCa4qfOg4EJlZkGud4w7TMkxyyCZIx2wvYOg"
+      }
+    ],
+    "pricing": {
+      "subtotal": 6048,
+      "discount": 750,
+      "couponApplied": "FESTIVE15",
+      "giftWrapTotal": 0,
+      "shippingCost": 0,
+      "estimatedGstIncluded": 720,
+      "total": 5298
+    },
+    "payment": {
+      "method": "upi",
+      "status": "captured",
+      "transactionId": "TXN-ICICI-99482104",
+      "utrNumber": "UTR-994821043821",
+      "paidAt": "2026-10-16T17:59:15.595Z",
+      "verificationHash": "e4d8f1c8b9a2c3d4e5f6a7b8c9d0"
+    },
+    "trackingTimeline": [
+      {
+        "step": "Order Confirmed & Payment Verified",
+        "timestamp": "Oct 11, 2026 · 10:15 AM",
+        "description": "256-bit bank encrypted UPI payment confirmed. Order sent to Jaipur Atelier.",
+        "completed": true
+      },
+      {
+        "step": "Atelier Inspection & Master Buffing",
+        "timestamp": "Oct 11, 2026 · 02:40 PM",
+        "description": "Bell-brass acoustic resonance and tamarind-seed finish certified by Master Smith.",
+        "completed": true
+      },
+      {
+        "step": "Artisanal Archival Packaging",
+        "timestamp": "Oct 12, 2026 · 09:30 AM",
+        "description": "Handmade Lokta gift wrap tied with unbleached cotton cord and wax seal.",
+        "completed": true,
+        "current": true
+      },
+      {
+        "step": "Handed to BlueDart Air Express",
+        "timestamp": "Estimated Oct 13, 2026",
+        "description": "Direct courier dispatch from Jaipur Hub to Mumbai Airport Transit.",
+        "completed": false
+      },
+      {
+        "step": "Out for White-Glove Delivery",
+        "timestamp": "Estimated Oct 14, 2026",
+        "description": "Doorstep handover with fragile inspection guarantee.",
+        "completed": false
+      }
+    ]
+  },
+  {
+    "id": "ORD-SJ-2026-4484",
+    "orderNumber": "SJ-2026-4484",
+    "createdAt": "2026-10-16T01:59:15.603Z",
+    "status": "shipped",
+    "customer": {
+      "fullName": "Vikramaditya Sengupta",
+      "email": "vikram.sengupta@kolkata-arts.in",
+      "phone": "+91 97482 12345",
+      "address": "14 Ballygunge Circular Road, Apt 5B",
+      "city": "Kolkata",
+      "state": "West Bengal",
+      "pincode": "700019"
+    },
+    "shipping": {
+      "speed": "express",
+      "cost": 0,
+      "trackingCarrier": "Delhivery Surface Premium",
+      "waybillNumber": "DELHIVERY-774892019",
+      "estimatedDelivery": "Oct 13, 2026"
+    },
+    "gift": {
+      "isGift": false
+    },
+    "items": [
+      {
+        "productId": "surya-mandala-hanging-diya",
+        "name": "Surya Mandala Brass Hanging Diya with Brass Bells",
+        "price": 2450,
+        "quantity": 1,
+        "giftWrap": false,
+        "image": "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?auto=format&fit=crop&w=800&q=80"
+      }
+    ],
+    "pricing": {
+      "subtotal": 2450,
+      "discount": 0,
+      "giftWrapTotal": 0,
+      "shippingCost": 0,
+      "estimatedGstIncluded": 373,
+      "total": 2450
+    },
+    "payment": {
+      "method": "card",
+      "status": "captured",
+      "transactionId": "TXN-CARD-4491028",
+      "cardLast4": "4242",
+      "cardBrand": "Visa Signature",
+      "paidAt": "2026-10-16T01:59:15.603Z",
+      "verificationHash": "card_verified_4484"
+    },
+    "trackingTimeline": [
+      {
+        "step": "Order Placed & Card Payment Captured",
+        "timestamp": "2 days ago",
+        "description": "Payment authorized via ICICI Payment Gateway.",
+        "completed": true
+      },
+      {
+        "step": "Inspected & Wax Sealed",
+        "timestamp": "Yesterday, 11:30 AM",
+        "description": "Multi-layer bubble cushioning with brass preservation cloth applied.",
+        "completed": true
+      },
+      {
+        "step": "Dispatched via Delhivery Express",
+        "timestamp": "Yesterday, 4:15 PM",
+        "description": "Waybill #DELHIVERY-774892019 in transit to Kolkata Airport Sorting Hub.",
+        "completed": true,
+        "current": true
+      }
+    ]
+  },
+  {
+    "id": "ORD-SJ-2026-4485",
+    "orderNumber": "SJ-2026-4485",
+    "createdAt": "2026-10-14T05:59:15.603Z",
+    "status": "delivered",
+    "customer": {
+      "fullName": "Ananya Deshmukh",
+      "email": "ananya.d@pune-living.org",
+      "phone": "+91 94220 88712",
+      "address": "Villa 12, Nyati Greens, Koregaon Park Annexe",
+      "city": "Pune",
+      "state": "Maharashtra",
+      "pincode": "411001"
+    },
+    "shipping": {
+      "speed": "express",
+      "cost": 0,
+      "trackingCarrier": "BlueDart Apex Express",
+      "waybillNumber": "BLUEDART-55109283",
+      "estimatedDelivery": "Oct 10, 2026"
+    },
+    "gift": {
+      "isGift": false
+    },
+    "items": [
+      {
+        "productId": "shringara-brass-lotus-urli",
+        "name": "Shringara Hand-Hammered Brass Lotus Urli",
+        "price": 4890,
+        "quantity": 1,
+        "giftWrap": true,
+        "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80"
+      }
+    ],
+    "pricing": {
+      "subtotal": 4890,
+      "discount": 489,
+      "couponApplied": "FESTIVE10",
+      "giftWrapTotal": 0,
+      "shippingCost": 0,
+      "estimatedGstIncluded": 671,
+      "total": 4401
+    },
+    "payment": {
+      "method": "upi",
+      "status": "captured",
+      "transactionId": "TXN-UPI-8819284",
+      "utrNumber": "UTR-AXIS-551029",
+      "paidAt": "2026-10-14T05:59:15.603Z",
+      "verificationHash": "verified_deshmukh_4485"
+    },
+    "trackingTimeline": [
+      {
+        "step": "Order Placed & Confirmed",
+        "timestamp": "4 days ago",
+        "description": "Confirmed and payment settled.",
+        "completed": true
+      },
+      {
+        "step": "Dispatched via BlueDart Apex",
+        "timestamp": "3 days ago",
+        "description": "Air dispatch to Pune Hub.",
+        "completed": true
+      },
+      {
+        "step": "Delivered with White-Glove Handover",
+        "timestamp": "Yesterday, 2:30 PM",
+        "description": "Safely delivered to recipient at Koregaon Park Annexe.",
+        "completed": true,
+        "current": true
+      }
+    ]
+  }
+]

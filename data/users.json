@@ -1,0 +1,11 @@
+[
+  {
+    "id": "usr-super-admin-01",
+    "username": "admin",
+    "email": "admin@sajavat.com",
+    "fullName": "Super Admin",
+    "role": "super_admin",
+    "createdAt": "2026-10-18T06:25:45.869Z",
+    "lastLogin": "2026-10-18T06:36:04.689Z"
+  }
+]

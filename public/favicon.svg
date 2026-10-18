@@ -1,35 +1,33 @@
 <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="favBg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stopColor="#7A0016" />
-      <stop offset="100%" stopColor="#45000A" />
+    <radialGradient id="favBg" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#7A0016" />
+      <stop offset="70%" stop-color="#5E000F" />
+      <stop offset="100%" stop-color="#45000A" />
     </radialGradient>
     <linearGradient id="favGold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#F9E8B2" />
-      <stop offset="50%" stopColor="#E5C365" />
-      <stop offset="100%" stopColor="#D4AF37" />
+      <stop offset="0%" stop-color="#FFF0C4" />
+      <stop offset="40%" stop-color="#F9E8B2" />
+      <stop offset="75%" stop-color="#E5C365" />
+      <stop offset="100%" stop-color="#D4AF37" />
     </linearGradient>
   </defs>
+  
+  <!-- Rounded Royal Wine Base -->
   <rect width="100" height="100" rx="22" fill="url(#favBg)" />
-  <rect x="3" y="3" width="94" height="94" rx="19" stroke="#D4AF37" stroke-width="1.2" stroke-opacity="0.4" fill="none" />
+  <rect x="4" y="4" width="92" height="92" rx="18" stroke="url(#favGold)" stroke-width="1.8" stroke-opacity="0.8" fill="none" />
   
-  <!-- Ribbon on 'S' -->
-  <path d="M38 32 C 34 26, 28 28, 31 34 C 33 38, 38 37, 39 35" stroke="url(#favGold)" stroke-width="1.2" fill="none" />
-  <circle cx="38" cy="35" r="1.2" fill="#D4AF37" />
-
-  <text
-    x="25"
-    y="68"
-    font-family="'Playfair Display', serif"
-    font-size="52"
-    font-weight="600"
-    fill="url(#favGold)"
-  >
-    S
-  </text>
+  <!-- Sacred Diya Body -->
+  <path d="M 22 55 Q 50 50 78 55 Q 68 76 50 76 Q 32 76 22 55 Z" fill="url(#favGold)" />
+  <ellipse cx="50" cy="55" rx="28" ry="4.5" fill="#FFF0C4" opacity="0.9" />
+  <rect x="44" y="76" width="12" height="4" rx="1.5" fill="#B3861D" />
   
-  <!-- Mini lantern on right -->
-  <line x1="72" y1="42" x2="72" y2="52" stroke="url(#favGold)" stroke-width="1.2" />
-  <polygon points="68,52 76,52 78,61 72,67 66,61" stroke="url(#favGold)" stroke-width="1.2" fill="none" />
-  <circle cx="72" cy="72" r="1.2" fill="#D4AF37" />
+  <!-- Auspicious Glowing Flame -->
+  <path d="M 50 20 C 58 35 62 44 50 51 C 38 44 42 35 50 20 Z" fill="url(#favGold)" />
+  <path d="M 50 26 C 54 36 57 43 50 48 C 43 43 46 36 50 26 Z" fill="#FFFDF7" />
+  
+  <!-- Sparkling Radiance Accents -->
+  <circle cx="50" cy="14" r="1.5" fill="#FFF0C4" />
+  <circle cx="30" cy="32" r="1.2" fill="#F9E8B2" />
+  <circle cx="70" cy="32" r="1.2" fill="#F9E8B2" />
 </svg>

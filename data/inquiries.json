@@ -1,0 +1,39 @@
+[
+  {
+    "id": "inq-1792306080491",
+    "referenceId": "SJV-CARE-222316",
+    "name": "Meera Singhania",
+    "email": "meera@example.com",
+    "phone": "+91 98765 43210",
+    "subject": "General Concierge Inquiry",
+    "message": "Looking for bespoke festive brass hampers for an upcoming celebration.",
+    "preferredMethod": "email",
+    "createdAt": "2026-10-18T06:48:00.491Z",
+    "status": "new"
+  },
+  {
+    "id": "inq-1792305326398",
+    "referenceId": "SJV-CARE-109170",
+    "name": "Ananya Sharma",
+    "email": "ananya.sharma@example.com",
+    "phone": "+91 98101 23456",
+    "subject": "Bespoke Corporate & Festive Hampers",
+    "message": "We require 25 handcrafted brass urli gift sets with custom botanical soy candles for our festive reception.",
+    "preferredMethod": "whatsapp",
+    "createdAt": "2026-10-18T06:35:26.398Z",
+    "status": "new"
+  },
+  {
+    "id": "inq-01",
+    "referenceId": "SJV-CARE-829104",
+    "name": "Meera Chawla",
+    "email": "meera.chawla@example.com",
+    "phone": "+91 98201 54321",
+    "subject": "Bespoke Corporate Gifting & Bulk Hampers",
+    "orderNumber": "",
+    "message": "We are planning 45 festive brass urli & hand-poured soy candle sets for our annual Diwali patrons gift box. Could you share customization details?",
+    "preferredMethod": "whatsapp",
+    "createdAt": "2026-10-18T00:59:15.596Z",
+    "status": "in_progress"
+  }
+]

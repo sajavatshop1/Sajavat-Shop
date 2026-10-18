@@ -3,11 +3,39 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import fs from 'fs';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function loadJson<T>(filename: string, fallback: T): T {
+  try {
+    const filePath = path.join(DATA_DIR, filename);
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      return JSON.parse(content) as T;
+    }
+  } catch (err) {
+    console.error(`Error loading JSON ${filename}:`, err);
+  }
+  return fallback;
+}
+
+function saveJson<T>(filename: string, data: T): void {
+  try {
+    const filePath = path.join(DATA_DIR, filename);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.error(`Error saving JSON ${filename}:`, err);
+  }
+}
 
 import { INITIAL_FULL_SEO_DATA, runSeoAudit } from './src/data/seoDefaults.js';
 import { INITIAL_JOURNAL_ARTICLES } from './src/data/mockData.js';
@@ -170,7 +198,7 @@ export interface Order {
 }
 
 // Seed Products Catalogue matching design imagery and descriptions
-const products: Product[] = [
+const SEED_PRODUCTS: Product[] = [
   {
     id: 'mayura-brass-urli',
     name: 'Mayura Brass Urli with Floating Diya Set',
@@ -751,11 +779,24 @@ const products: Product[] = [
   }
 ];
 
+// Load persisted products from data/products.json
+let products: Product[] = loadJson<Product[]>('products.json', SEED_PRODUCTS);
+if (!fs.existsSync(path.join(DATA_DIR, 'products.json'))) {
+  saveJson('products.json', products);
+}
+
 // Seed Journal Articles matching curated high-ranking editorial essays
-let journalArticles: JournalArticle[] = [...INITIAL_JOURNAL_ARTICLES];
+let journalArticles: JournalArticle[] = loadJson<JournalArticle[]>('journal.json', [...INITIAL_JOURNAL_ARTICLES]);
+if (!fs.existsSync(path.join(DATA_DIR, 'journal.json'))) {
+  saveJson('journal.json', journalArticles);
+}
 
 // Orders In-Memory Store
 const ordersStore: Map<string, Order> = new Map();
+
+function syncOrdersToFile(): void {
+  saveJson('orders.json', Array.from(ordersStore.values()));
+}
 
 // Pending OTP store for COD verification
 const codOtpStore: Map<string, { otp: string; expiresAt: number; phone: string }> = new Map();
@@ -1332,6 +1373,7 @@ app.post('/api/payment/create-order', (req: Request, res: Response) => {
   };
 
   ordersStore.set(orderId, newOrder);
+  syncOrdersToFile();
 
   // Generate UPI dynamic URI
   const upiId = 'sajavat.decor@icici';
@@ -1398,6 +1440,7 @@ app.post('/api/payment/verify-upi', (req: Request, res: Response) => {
   order.trackingTimeline[1].timestamp = 'Just now';
   order.trackingTimeline[1].description = `Cleared via ${appUsed || 'UPI'} (UTR: ${utrNumber})`;
   order.trackingTimeline[2].current = true;
+  syncOrdersToFile();
 
   res.json({
     success: true,
@@ -1504,6 +1547,7 @@ app.post('/api/payment/complete-3ds', (req: Request, res: Response) => {
   order.trackingTimeline[2].current = true;
 
   cardChallengeStore.delete(challengeId);
+  syncOrdersToFile();
 
   res.json({
     success: true,
@@ -1537,6 +1581,7 @@ app.post('/api/payment/netbanking', (req: Request, res: Response) => {
   order.trackingTimeline[1].timestamp = 'Just now';
   order.trackingTimeline[1].description = `Cleared via ${bankCode} Internet Banking`;
   order.trackingTimeline[2].current = true;
+  syncOrdersToFile();
 
   res.json({
     success: true,
@@ -1610,6 +1655,7 @@ app.post('/api/payment/verify-cod-otp', (req: Request, res: Response) => {
   order.trackingTimeline[2].current = true;
 
   codOtpStore.delete(orderId);
+  syncOrdersToFile();
 
   res.json({
     success: true,
@@ -1656,7 +1702,7 @@ export interface ContactInquiry {
   status: 'new' | 'in_progress' | 'resolved';
 }
 
-const contactInquiries: ContactInquiry[] = [
+const SEED_INQUIRIES: ContactInquiry[] = [
   {
     id: 'inq-01',
     referenceId: 'SJV-CARE-829104',
@@ -1671,6 +1717,11 @@ const contactInquiries: ContactInquiry[] = [
     status: 'in_progress'
   }
 ];
+
+let contactInquiries: ContactInquiry[] = loadJson<ContactInquiry[]>('inquiries.json', SEED_INQUIRIES);
+if (!fs.existsSync(path.join(DATA_DIR, 'inquiries.json'))) {
+  saveJson('inquiries.json', contactInquiries);
+}
 
 app.get('/api/contact', (_req: Request, res: Response) => {
   res.json({ inquiries: contactInquiries, total: contactInquiries.length });
@@ -1707,6 +1758,7 @@ app.post('/api/contact', (req: Request, res: Response) => {
   };
 
   contactInquiries.unshift(newInquiry);
+  saveJson('inquiries.json', contactInquiries);
 
   res.status(201).json({
     success: true,
@@ -1961,6 +2013,21 @@ seedAdminUser({
   plainPassword: DEFAULT_ADMIN_PASSWORD
 });
 
+function syncUsersToFile(): void {
+  const usersList = Array.from(adminUsersStore.values()).map(u => ({
+    id: u.id,
+    username: u.username,
+    email: u.email,
+    fullName: u.fullName,
+    role: u.role,
+    createdAt: u.createdAt,
+    lastLogin: u.lastLogin
+  }));
+  saveJson('users.json', usersList);
+}
+
+syncUsersToFile();
+
 
 // Seed additional realistic orders for the CMS view
 const seedAdditionalOrders = () => {
@@ -2198,6 +2265,17 @@ const seedAdditionalOrders = () => {
 
 seedAdditionalOrders();
 
+// Load orders from data/orders.json if available, or sync seeded orders to disk
+const loadedOrders = loadJson<Order[]>('orders.json', []);
+if (loadedOrders && loadedOrders.length > 0) {
+  ordersStore.clear();
+  loadedOrders.forEach((o) => {
+    if (o && o.id) ordersStore.set(o.id, o);
+  });
+} else {
+  syncOrdersToFile();
+}
+
 // Express Auth Request Interface
 interface AuthRequest extends Request {
   adminUser?: SessionRecord;
@@ -2291,6 +2369,7 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 
   activeSessionsStore.set(token, session);
   foundUser.lastLogin = new Date().toISOString();
+  syncUsersToFile();
 
   res.json({
     success: true,
@@ -2437,6 +2516,7 @@ app.post('/api/auth/users', authenticateAdmin, requireSuperAdmin, (req: AuthRequ
   });
 
   const created = adminUsersStore.get(newId)!;
+  syncUsersToFile();
   res.status(201).json({
     success: true,
     message: `Staff member ${created.fullName} added successfully.`,
@@ -2466,6 +2546,7 @@ app.delete('/api/auth/users/:id', authenticateAdmin, requireSuperAdmin, (req: Au
   }
 
   adminUsersStore.delete(id);
+  syncUsersToFile();
 
   // Invalidate any sessions of that user
   for (const [token, s] of activeSessionsStore.entries()) {
@@ -2478,7 +2559,7 @@ app.delete('/api/auth/users/:id', authenticateAdmin, requireSuperAdmin, (req: Au
 // ==========================================
 // CMS DASHBOARD METRICS API
 // ==========================================
-app.get('/api/cms/dashboard', authenticateAdmin, (_req: AuthRequest, res: Response) => {
+app.get(['/api/cms/dashboard', '/api/cms/metrics'], authenticateAdmin, (_req: AuthRequest, res: Response) => {
   const allOrders = Array.from(ordersStore.values());
   const allProducts = products;
 
@@ -2561,7 +2642,7 @@ app.get('/api/cms/products', authenticateAdmin, (req: AuthRequest, res: Response
 });
 
 // Create New Product
-app.post('/api/cms/products', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.post(['/api/cms/products', '/api/products'], authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const {
     name,
     sku,
@@ -2620,11 +2701,17 @@ app.post('/api/cms/products', authenticateAdmin, requireSuperAdmin, (req: AuthRe
   };
 
   products.unshift(newProduct);
-  res.status(201).json({ success: true, message: 'Product added to catalogue.', product: newProduct });
+  saveJson('products.json', products);
+  res.status(201).json({
+    success: true,
+    message: `Product "${newProduct.name}" added to catalogue.`,
+    product: newProduct,
+    ...newProduct
+  });
 });
 
 // Update Existing Product
-app.put('/api/cms/products/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.put(['/api/cms/products/:id', '/api/products/:id'], authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = products.findIndex(p => p.id === id);
 
@@ -2642,11 +2729,18 @@ app.put('/api/cms/products/:id', authenticateAdmin, requireSuperAdmin, (req: Aut
     stock: updates.stock !== undefined ? Math.max(0, Number(updates.stock)) : existing.stock
   };
 
-  res.json({ success: true, message: 'Product updated.', product: products[index] });
+  saveJson('products.json', products);
+
+  res.json({
+    success: true,
+    message: 'Product updated.',
+    product: products[index],
+    ...products[index]
+  });
 });
 
 // Quick Stock Adjustment
-app.patch('/api/cms/products/:id/stock', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.patch(['/api/cms/products/:id/stock', '/api/products/:id/stock'], authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { stock, delta } = req.body;
 
@@ -2661,11 +2755,13 @@ app.patch('/api/cms/products/:id/stock', authenticateAdmin, requireSuperAdmin, (
     product.stock = Math.max(0, product.stock + Math.floor(delta));
   }
 
+  saveJson('products.json', products);
+
   res.json({ success: true, stock: product.stock, message: `Stock updated for ${product.name}` });
 });
 
 // Toggle Featured / Bestseller
-app.patch('/api/cms/products/:id/toggle-featured', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.patch(['/api/cms/products/:id/toggle-featured', '/api/products/:id/toggle-featured'], authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const { field } = req.body; // 'featured' | 'bestseller'
 
@@ -2680,21 +2776,28 @@ app.patch('/api/cms/products/:id/toggle-featured', authenticateAdmin, requireSup
     product.bestseller = !product.bestseller;
   }
 
+  saveJson('products.json', products);
+
   res.json({ success: true, product });
 });
 
 // Delete Product
-app.delete('/api/cms/products/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
-
+app.delete(['/api/cms/products/:id', '/api/products/:id'], authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = products.findIndex(p => p.id === id);
 
   if (index === -1) {
-    return res.status(404).json({ error: 'Product not found.' });
+    return res.status(404).json({ error: 'Product not found in catalogue.' });
   }
 
   const removed = products.splice(index, 1)[0];
-  res.json({ success: true, message: `Removed ${removed.name} from catalog.` });
+  saveJson('products.json', products);
+  res.json({
+    success: true,
+    message: `Removed ${removed.name} from catalog.`,
+    id,
+    deletedProduct: removed
+  });
 });
 
 // ==========================================
@@ -2767,6 +2870,7 @@ app.patch('/api/cms/orders/:id/status', authenticateAdmin, requireSuperAdmin, (r
     });
   }
 
+  syncOrdersToFile();
   res.json({ success: true, message: `Order #${order.orderNumber} updated to ${order.status}.`, order });
 });
 
@@ -2809,6 +2913,7 @@ app.patch('/api/cms/inquiries/:id/status', authenticateAdmin, requireSuperAdmin,
     (inquiry as any).staffNotes = String(staffNotes).trim();
   }
 
+  saveJson('inquiries.json', contactInquiries);
   res.json({ success: true, message: 'Inquiry status updated.', inquiry });
 });
 
@@ -2822,6 +2927,7 @@ app.delete('/api/cms/inquiries/:id', authenticateAdmin, requireSuperAdmin, (req:
   }
 
   contactInquiries.splice(index, 1);
+  saveJson('inquiries.json', contactInquiries);
   res.json({ success: true, message: 'Inquiry deleted.' });
 });
 
@@ -2857,6 +2963,7 @@ app.post('/api/cms/journal', authenticateAdmin, requireSuperAdmin, (req: AuthReq
   };
 
   journalArticles.unshift(newArticle);
+  saveJson('journal.json', journalArticles);
   res.status(201).json({ success: true, message: 'Journal article published.', article: newArticle });
 });
 
@@ -2874,6 +2981,7 @@ app.put('/api/cms/journal/:id', authenticateAdmin, requireSuperAdmin, (req: Auth
     ...req.body
   };
 
+  saveJson('journal.json', journalArticles);
   res.json({ success: true, message: 'Article updated.', article: journalArticles[index] });
 });
 
@@ -2887,6 +2995,7 @@ app.delete('/api/cms/journal/:id', authenticateAdmin, requireSuperAdmin, (req: A
   }
 
   journalArticles.splice(index, 1);
+  saveJson('journal.json', journalArticles);
   res.json({ success: true, message: 'Article deleted.' });
 });
 
@@ -2980,7 +3089,7 @@ export interface SiteSettings {
   freeShippingThreshold: number;
 }
 
-let siteSettings: SiteSettings = {
+let siteSettings: SiteSettings = loadJson<SiteSettings>('settings.json', {
   announcementText: 'Thoughtfully Curated Festive Décor — Complimentary Shipping on Orders Over ₹2,999',
   announcementEnabled: true,
   announcementBg: '#800020',
@@ -3000,7 +3109,10 @@ let siteSettings: SiteSettings = {
   socialWhatsapp: 'https://wa.me/919811234567',
   storeCurrencySymbol: '₹',
   freeShippingThreshold: 2999
-};
+});
+if (!fs.existsSync(path.join(DATA_DIR, 'settings.json'))) {
+  saveJson('settings.json', siteSettings);
+}
 
 // Public Get Site Settings
 app.get('/api/settings', (_req: Request, res: Response) => {
@@ -3008,11 +3120,12 @@ app.get('/api/settings', (_req: Request, res: Response) => {
 });
 
 // Admin Update Site Settings
-app.put('/api/cms/settings', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.put(['/api/cms/settings', '/api/settings'], authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
   siteSettings = {
     ...siteSettings,
     ...req.body
   };
+  saveJson('settings.json', siteSettings);
   res.json({ success: true, message: 'Atelier site settings updated.', settings: siteSettings });
 });
 
@@ -3033,6 +3146,7 @@ app.patch('/api/cms/products/:id/image', authenticateAdmin, requireSuperAdmin, (
 
   const key = (imageKey || 'main') as keyof typeof product.images;
   product.images[key] = imageUrl.trim();
+  saveJson('products.json', products);
 
   res.json({
     success: true,

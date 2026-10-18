@@ -1008,10 +1008,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               </div>
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px] text-[#800020]">
-                  published_with_changes
+                  workspace_premium
                 </span>
-                <span>Hassle-free 7-day doorstep exchange</span>
+                <span>Authentic Moradabad artisan brass casting</span>
               </div>
+
             </div>
 
             <div className="text-[11px] text-[#7A6B69] text-center pt-1 border-t border-[#F3E6D5]">

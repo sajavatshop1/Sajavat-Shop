@@ -1,0 +1,21 @@
+{
+  "announcementText": "Handcrafted Heritage Festive Decor - Free Shipping Above ₹2,999",
+  "announcementEnabled": true,
+  "announcementBg": "#800020",
+  "announcementTextColor": "#FFF9F2",
+  "heroHeading": "Make Every Moment",
+  "heroItalicWord": "Beautiful.",
+  "heroSubtitle": "Thoughtfully chosen décor for celebrations, meaningful moments, and everyday living. Handcrafted with reverence for India’s richest artisan traditions.",
+  "heroImage": "https://lh3.googleusercontent.com/aida-public/AB6AXuBMdGqTs8sIYaCbwDopmf31fHBsgPr8c1G59yDq68RsY96FN2KBGJHFTh-_MjF-q-wbNJ6jd6GrcJb_C_MDLONDbcXFq2fq4UNXEWsYZzBy_3CqkmhoiXaktJlof8y-EYiHth2oLamIIvsjVlPoFnNr6TpAhkIzGEAYOLqFDhNkcphMGn6ck0k6x_omVH3wk1zbeoAEcRPRwrKTmn-lutDS3lpehMqn7UBPHmuwfO323OrViLB4dPOjgA",
+  "heroPrimaryBtnText": "Shop the Collection",
+  "heroSecondaryBtnText": "Explore Festive Décor",
+  "heroAudienceNote": "Loved by over 18,500+ homes across India & abroad.",
+  "logoUrl": "/Sajavat.svg",
+  "contactEmail": "concierge@sajavat.com",
+  "contactPhone": "+91 98112 34567",
+  "contactAddress": "Sajavat Atelier, 14 Heritage Lane, Moradabad, UP 244001",
+  "socialInstagram": "https://instagram.com/sajavatatelier",
+  "socialWhatsapp": "https://wa.me/919811234567",
+  "storeCurrencySymbol": "₹",
+  "freeShippingThreshold": 2999
+}

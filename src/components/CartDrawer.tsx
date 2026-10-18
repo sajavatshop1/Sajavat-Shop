@@ -238,7 +238,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ setCurrentView }) => {
               <div className="flex items-center justify-center gap-4">
                 {[
                   { icon: 'lock', label: '256-bit SSL' },
-                  { icon: 'replay', label: '7-Day Returns' },
+                  { icon: 'inventory_2', label: 'Insured Shipping' },
                   { icon: 'workspace_premium', label: '100% Genuine' },
                 ].map(b => (
                   <div key={b.label} className="flex items-center gap-1 text-[#554745]">
