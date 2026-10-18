@@ -328,14 +328,6 @@ export const Footer: React.FC<FooterProps> = ({ setCurrentView, onSelectCategory
                   {link.label}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => { window.location.hash = '#admin'; setCurrentView('cms'); }}
-                className="hover:text-white transition-colors whitespace-nowrap font-bold text-[#F9E8B2] flex items-center gap-1 border-b border-[#F9E8B2]/40"
-              >
-                <span className="material-symbols-outlined text-[13px]">admin_panel_settings</span>
-                Admin Backend Control
-              </button>
             </div>
           </div>
 

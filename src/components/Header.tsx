@@ -43,64 +43,10 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
     setMobileMenuOpen(false);
   };
 
-  const showAnnouncement = siteSettings ? siteSettings.announcementEnabled : true;
-  const announcementText = siteSettings?.announcementText || 'Complimentary Shipping on Orders Over ₹2,999 • Insured Transit Packaging • 100% Pure Virgin Brass';
-  const announcementBg = siteSettings?.announcementBg || '#800020';
-  const announcementTextColor = siteSettings?.announcementTextColor || '#FFF9F2';
   const logoUrl = siteSettings?.logoUrl || '/Sajavat.svg';
 
   return (
     <>
-      {/* ── Announcement Marquee Bar ── */}
-      {showAnnouncement && (
-        <div
-          className="w-full py-2 overflow-hidden relative z-50"
-          style={{ backgroundColor: announcementBg, color: announcementTextColor }}
-        >
-          <div className="marquee-track text-[11px] sm:text-xs font-medium tracking-[0.2em] uppercase select-none">
-            {[...Array(6)].map((_, i) => (
-              <span key={i} className="whitespace-nowrap px-10">
-                ✦ &nbsp;{announcementText}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Trust Security Micro-Strip ── */}
-      <div className="w-full bg-[#F3E6D5]/70 border-b border-[#E6D7C3] hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between text-[10px] font-medium text-[#554745] tracking-[0.12em] uppercase">
-          <div className="flex items-center gap-6">
-            <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[13px] text-[#2D7A2D]">verified_user</span>
-              SSL Secured Checkout
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[13px] text-[#2D7A2D]">payments</span>
-              100% Safe &amp; Encrypted Payments
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[13px] text-[#2D7A2D]">workspace_premium</span>
-              100% Pure Virgin Brass
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-[#554745]">
-            <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[13px]">support_agent</span>
-              Mon–Sat 10am–7pm
-            </span>
-            <span className="text-[#7A6B69]">·</span>
-            <button
-              type="button"
-              onClick={() => { window.location.hash = '#admin'; setCurrentView('cms'); }}
-              className="flex items-center gap-1 text-[#800020] hover:text-[#550010] transition-colors font-bold cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[14px]">admin_panel_settings</span>
-              Admin Backend
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* ── Main Sticky Header ── */}
       <header
@@ -312,15 +258,6 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
               <span className="material-symbols-outlined text-[22px]">person</span>
             </button>
 
-            <button
-              type="button"
-              aria-label="Admin Backend Portal"
-              title="Admin Backend & Inventory Management"
-              onClick={() => { window.location.hash = '#admin'; setCurrentView('cms'); }}
-              className="tap-target text-[#800020] hover:text-[#550010] bg-[#F3E6D5]/60 hover:bg-[#F3E6D5] rounded-full p-1.5 flex items-center transition-colors btn-press cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
-            </button>
 
             <button
               type="button"
@@ -394,7 +331,6 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
               { label: 'The Journal', view: 'journal', icon: 'article' },
               { label: 'Track My Order', view: null as string | null, icon: 'local_shipping', action: () => setIsOrderLookupOpen(true) },
               { label: 'Customer Care', view: 'contact', icon: 'headset_mic', action: null as (() => void) | null },
-              { label: 'Admin Backend Portal', view: 'cms', icon: 'admin_panel_settings', action: () => { window.location.hash = '#admin'; setCurrentView('cms'); } },
             ].map(item => (
               <button
                 key={item.label}

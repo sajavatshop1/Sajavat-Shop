@@ -26,10 +26,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [highlightTab, setHighlightTab] = useState<'all' | 'urlis' | 'aromatics' | 'pairs'>('all');
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
-  const [couponCopied, setCouponCopied] = useState(false);
 
   // Scroll reveal hooks for modern smooth entrance
-  const trustRef = useScrollReveal();
   const categoriesRef = useScrollReveal<HTMLDivElement>();
   const highlightsTitleRef = useScrollReveal<HTMLDivElement>();
   const highlightsGridRef = useScrollRevealAll();
@@ -100,13 +98,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   // Handpicked products for "Shop The Look" spotlight
   const spotlightProducts = products.slice(0, 2);
 
-  const handleCopyCoupon = () => {
-    navigator.clipboard?.writeText('SAJAVAT10');
-    setCouponCopied(true);
-    showToast('Code SAJAVAT10 copied! 10% off at checkout.');
-    setTimeout(() => setCouponCopied(false), 3000);
-  };
-
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsletterEmail) return;
@@ -115,32 +106,8 @@ export const HomePage: React.FC<HomePageProps> = ({
     setNewsletterEmail('');
   };
 
-  const trustBadges = [
-    { title: '100% Solid Brass', sub: 'Hand-cast Moradabad artisan brass', icon: 'workspace_premium' },
-    { title: 'Botanical Fragrance', sub: 'Clean soy wax with natural temple oils', icon: 'spa' },
-    { title: 'Complimentary Delivery', sub: 'Free Pan-India shipping over ₹2,999', icon: 'local_shipping' },
-    { title: 'Dispatched in 24 Hours', sub: 'Triple-layer shockproof packing', icon: 'bolt' },
-  ];
-
   return (
     <div className="flex flex-col w-full bg-[#FFF9F2]">
-      {/* ─── 0. TOP PROMOTIONAL FLASH STRIP ─── */}
-      <aside aria-label="Limited Festive Offer" className="w-full bg-[#700014] text-[#FFF9F2] px-4 py-2 border-b border-[#55000E]">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs tracking-wider">
-          <span className="flex items-center gap-1.5 font-medium">
-            <span className="material-symbols-outlined text-[16px] text-[#D4AF37]">celebration</span>
-            <span>FESTIVE PREVIEW: Flat 10% Off on orders above ₹1,999</span>
-          </span>
-          <button
-            type="button"
-            onClick={handleCopyCoupon}
-            className="inline-flex items-center gap-1.5 bg-[#FFF9F2]/10 hover:bg-[#FFF9F2]/20 border border-[#D4AF37]/50 px-2.5 py-0.5 rounded text-[11px] font-semibold text-[#F9E8B2] transition-colors btn-press cursor-pointer"
-          >
-            <span>{couponCopied ? 'COPIED!' : 'CODE: SAJAVAT10'}</span>
-            <span className="material-symbols-outlined text-[13px]">{couponCopied ? 'done' : 'content_copy'}</span>
-          </button>
-        </div>
-      </aside>
 
       {/* ─── 1. HERO SECTION (MODERN, HIGH-CONVERTING, PREMIUM) ─── */}
       <section className="relative w-full min-h-[520px] lg:min-h-[640px] flex items-center overflow-hidden bg-[#1A1A1A]">
@@ -279,30 +246,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                   {cat.title}
                 </span>
               </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── 3. TRUST & LOGISTICS STRIP ─── */}
-      <section
-        ref={trustRef as React.RefObject<HTMLElement>}
-        className="w-full bg-[#F3E6D5]/40 border-b border-[#E6D7C3] py-5 reveal"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {trustBadges.map((badge, idx) => (
-              <div key={idx} className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-full bg-[#800020]/10 flex items-center justify-center shrink-0 text-[#800020]">
-                  <span className="material-symbols-outlined text-[20px]">{badge.icon}</span>
-                </span>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-[#800020] uppercase tracking-wider">
-                    {badge.title}
-                  </span>
-                  <span className="text-[11px] text-[#7A6B69] line-clamp-1">{badge.sub}</span>
-                </div>
-              </div>
             ))}
           </div>
         </div>
