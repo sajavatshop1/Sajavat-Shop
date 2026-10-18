@@ -1,37 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { SajavatLogo } from '../components/SajavatLogo';
+import { SiteSettings } from '../types';
 
 interface ContactPageProps {
   setCurrentView: (view: string) => void;
   onSelectCategory?: (category: string) => void;
   initialTab?: 'form' | 'care' | 'shipping' | 'returns' | 'faqs';
+  siteSettings?: SiteSettings;
 }
 
 interface FormState {
   name: string;
   email: string;
   phone: string;
-  subject: string;
-  orderNumber: string;
-  preferredMethod: 'email' | 'whatsapp' | 'phone';
   message: string;
 }
-
-const INQUIRY_SUBJECTS = [
-  'Order Status & Tracking Assistance',
-  'Bespoke Corporate & Festive Hampers',
-  'Brassware Care & Tamarind Polishing Guidance',
-  'Pure Botanical Candle & Fragrance Inquiries',
-  'Wedding Favors & Return Gifts',
-  'Artisan Guild & Press Collaboration',
-  'General Concierge Inquiry'
-];
 
 export const ContactPage: React.FC<ContactPageProps> = ({
   setCurrentView,
   onSelectCategory,
-  initialTab = 'form'
+  initialTab = 'form',
+  siteSettings
 }) => {
   const { showToast, setIsOrderLookupOpen } = useCart();
 
@@ -40,14 +30,12 @@ export const ContactPage: React.FC<ContactPageProps> = ({
     name: '',
     email: '',
     phone: '',
-    subject: INQUIRY_SUBJECTS[0],
-    orderNumber: '',
-    preferredMethod: 'email',
     message: ''
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedReference, setSubmittedReference] = useState<string | null>(null);
   const [submittedData, setSubmittedData] = useState<FormState | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
@@ -63,25 +51,25 @@ export const ContactPage: React.FC<ContactPageProps> = ({
     const newErrors: Partial<Record<keyof FormState, string>> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Please provide your full name.';
+      newErrors.name = 'Please enter your full name.';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Name must be at least 2 characters.';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Please provide your email address.';
+      newErrors.email = 'Please enter your email address.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       newErrors.email = 'Please enter a valid email address.';
     }
 
-    if (formData.phone.trim() && !/^[+0-9\s-]{8,16}$/.test(formData.phone.trim())) {
-      newErrors.phone = 'Please enter a valid phone number (e.g. +91 98200 12345).';
+    if (formData.phone.trim() && !/^[+0-9\s()-]{8,18}$/.test(formData.phone.trim())) {
+      newErrors.phone = 'Please enter a valid phone number.';
     }
 
     if (!formData.message.trim()) {
-      newErrors.message = 'Please share your inquiry or message with our atelier.';
-    } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Please provide a little more detail (at least 10 characters).';
+      newErrors.message = 'Please enter your message.';
+    } else if (formData.message.trim().length < 5) {
+      newErrors.message = 'Please provide at least 5 characters.';
     }
 
     setErrors(newErrors);
@@ -90,9 +78,10 @@ export const ContactPage: React.FC<ContactPageProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
 
     if (!validate()) {
-      showToast('Please verify the highlighted fields in your request.');
+      showToast('Please check the required fields highlighted below.');
       return;
     }
 
@@ -102,25 +91,30 @@ export const ContactPage: React.FC<ContactPageProps> = ({
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim() || undefined,
+          message: formData.message.trim(),
+          subject: 'Concierge Inquiry',
+          preferredMethod: 'email'
+        })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit inquiry.');
+        throw new Error(data.error || 'Failed to submit inquiry. Please try again.');
       }
 
       setSubmittedReference(data.referenceId);
       setSubmittedData({ ...formData });
-      showToast(`Inquiry received! Reference #${data.referenceId}`);
-      window.scrollTo({ top: 300, behavior: 'smooth' });
+      setSubmitError(null);
+      showToast(data.message || `Inquiry received! Reference #${data.referenceId}`);
+      window.scrollTo({ top: 250, behavior: 'smooth' });
     } catch (err: unknown) {
-      // Fallback offline support
-      const fallbackRef = `SJV-CARE-${Math.floor(100000 + Math.random() * 900000)}`;
-      setSubmittedReference(fallbackRef);
-      setSubmittedData({ ...formData });
-      const errorMsg = err instanceof Error ? err.message : 'Concierge request recorded.';
+      const errorMsg = err instanceof Error ? err.message : 'Unable to connect to the atelier server. Please try again.';
+      setSubmitError(errorMsg);
       showToast(errorMsg);
     } finally {
       setIsSubmitting(false);
@@ -132,12 +126,10 @@ export const ContactPage: React.FC<ContactPageProps> = ({
       name: '',
       email: '',
       phone: '',
-      subject: INQUIRY_SUBJECTS[0],
-      orderNumber: '',
-      preferredMethod: 'email',
       message: ''
     });
     setErrors({});
+    setSubmitError(null);
     setSubmittedReference(null);
     setSubmittedData(null);
   };
@@ -146,7 +138,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({
     if (submittedReference) {
       navigator.clipboard.writeText(submittedReference);
       setCopiedRef(true);
-      showToast(`Copied ${submittedReference} to clipboard`);
+      showToast(`Copied #${submittedReference}`);
       setTimeout(() => setCopiedRef(false), 2500);
     }
   };
@@ -154,106 +146,44 @@ export const ContactPage: React.FC<ContactPageProps> = ({
   return (
     <div className="min-h-screen bg-[#FFF9F2] pt-6 sm:pt-10 pb-24 text-[#332927]">
       {/* Editorial Header Section */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-10 sm:mb-14">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-8 sm:mb-12">
         <div className="mb-4 flex justify-center">
           <SajavatLogo variant="badge" size="md" showTagline={false} />
         </div>
         <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-[#D4AF37] block mb-2">
-          Atelier Concierge &amp; Care
+          Atelier Concierge
         </span>
-        <h1 className="font-serif text-3xl sm:text-5xl text-[#332927] mb-4 leading-tight">
-          How May We Assist Your Celebration?
+        <h1 className="font-serif text-3xl sm:text-5xl text-[#332927] mb-3 leading-tight">
+          We Are Here to Assist You
         </h1>
-        <p className="text-sm sm:text-base text-[#6E615D] max-w-2xl mx-auto leading-relaxed">
-          From personalized brassware styling advice and wedding trousseau gifting to expedited festive delivery, our atelier liaisons are dedicated to illuminating every ritual.
+        <p className="text-sm sm:text-base text-[#6E615D] max-w-xl mx-auto leading-relaxed">
+          For styling guidance, festive curations, custom gifting, or order inquiries, reach out to our team.
         </p>
-
-        {/* Quiet Typographic Commitments */}
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-[#800020] font-medium mt-6 pt-4 border-t border-[#F2E8DC] max-w-xl mx-auto">
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[17px] text-[#D4AF37]">schedule</span>
-            <span>&lt; 4 Hr Festive Response</span>
-          </div>
-          <span className="text-[#D4AF37] opacity-60">·</span>
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[17px] text-[#D4AF37]">workspace_premium</span>
-            <span>Direct Foundry Liaison</span>
-          </div>
-          <span className="text-[#D4AF37] opacity-60">·</span>
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[17px] text-[#D4AF37]">local_shipping</span>
-            <span>Break-Free Transit Guarantee</span>
-          </div>
-        </div>
       </div>
 
-      {/* Navigation Tabs Bar */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
-        <div className="flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar gap-2 p-1.5 bg-[#F9F1E7] border border-[#ECDCCB] rounded-2xl">
-          <button
-            type="button"
-            onClick={() => setActiveTab('form')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'form'
-                ? 'bg-[#800020] text-white shadow-sm'
-                : 'text-[#6E615D] hover:text-[#332927] hover:bg-white/60'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">support_agent</span>
-            <span>Concierge Inquiry Form</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('care')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'care'
-                ? 'bg-[#800020] text-white shadow-sm'
-                : 'text-[#6E615D] hover:text-[#332927] hover:bg-white/60'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">cleaning_services</span>
-            <span>Brass &amp; Candle Care Guide</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('shipping')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'shipping'
-                ? 'bg-[#800020] text-white shadow-sm'
-                : 'text-[#6E615D] hover:text-[#332927] hover:bg-white/60'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">local_shipping</span>
-            <span>Shipping &amp; Delivery</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('returns')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'returns'
-                ? 'bg-[#800020] text-white shadow-sm'
-                : 'text-[#6E615D] hover:text-[#332927] hover:bg-white/60'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">published_with_changes</span>
-            <span>Returns &amp; Exchanges</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('faqs')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
-              activeTab === 'faqs'
-                ? 'bg-[#800020] text-white shadow-sm'
-                : 'text-[#6E615D] hover:text-[#332927] hover:bg-white/60'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">help_outline</span>
-            <span>FAQs</span>
-          </button>
+      {/* Clean Minimalist Tabs Bar */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 mb-10">
+        <div className="flex items-center justify-start sm:justify-center overflow-x-auto no-scrollbar gap-1 sm:gap-2 p-1.5 bg-[#F5EFE6] rounded-full border border-[#E8DFD5] max-w-fit mx-auto">
+          {[
+            { id: 'form', label: 'Contact Us' },
+            { id: 'care', label: 'Care Guide' },
+            { id: 'shipping', label: 'Shipping & Delivery' },
+            { id: 'returns', label: 'Transit & Breakage' },
+            { id: 'faqs', label: 'FAQs' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as 'form' | 'care' | 'shipping' | 'returns' | 'faqs')}
+              className={`px-4 sm:px-5 py-2 rounded-full text-xs font-medium tracking-wide transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-[#800020] text-white shadow-sm'
+                  : 'text-[#6E615D] hover:text-[#332927] hover:bg-white/60'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -263,71 +193,38 @@ export const ContactPage: React.FC<ContactPageProps> = ({
         {activeTab === 'form' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             {/* Left 7 Cols: The Form or Success State */}
-            <div className="lg:col-span-7 bg-white rounded-3xl border border-[#F2E8DC] p-6 sm:p-10 shadow-sm">
+            {/* Left 7 Cols: The Form or Success State */}
+            <div className="lg:col-span-7 bg-white rounded-3xl border border-[#EDE3D6] p-7 sm:p-10 shadow-sm">
               {submittedReference && submittedData ? (
                 /* SUCCESS STATE */
-                <div className="text-center py-4 sm:py-8">
-                  <div className="w-16 h-16 rounded-full bg-[#FFF5E6] border-2 border-[#D4AF37] flex items-center justify-center mx-auto mb-6 text-[#800020]">
-                    <span className="material-symbols-outlined text-3xl">done_all</span>
+                <div className="text-center py-6 sm:py-8">
+                  <div className="w-14 h-14 rounded-full bg-[#FFF5E6] border border-[#D4AF37] flex items-center justify-center mx-auto mb-4 text-[#800020]">
+                    <span className="material-symbols-outlined text-2xl">check</span>
                   </div>
 
                   <span className="text-[11px] font-semibold tracking-widest uppercase text-[#D4AF37] block mb-1">
-                    Request Prioritized
+                    Message Received
                   </span>
-                  <h2 className="font-serif text-2xl sm:text-3xl text-[#332927] mb-3">
+                  <h2 className="font-serif text-2xl sm:text-3xl text-[#332927] mb-2">
                     Thank You, {submittedData.name}
                   </h2>
-                  <p className="text-sm text-[#6E615D] max-w-md mx-auto mb-6 leading-relaxed">
-                    Your concierge request has been safely catalogued in our Moradabad &amp; Jaipur atelier logs. A liaison will reach out through your preferred channel (<strong className="text-[#800020] uppercase text-xs">{submittedData.preferredMethod}</strong>).
+                  <p className="text-xs sm:text-sm text-[#6E615D] max-w-md mx-auto mb-6 leading-relaxed">
+                    Your inquiry has been received. Our concierge team will review your message and reply to <strong className="text-[#332927]">{submittedData.email}</strong> shortly.
                   </p>
 
                   {/* Reference Badge Card */}
-                  <div className="bg-[#FFF9F2] border border-[#F2E8DC] rounded-2xl p-5 mb-8 max-w-md mx-auto text-left">
-                    <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#F2E8DC]">
-                      <span className="text-xs text-[#6E615D]">Atelier Reference ID</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-[#800020]">
-                          {submittedReference}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleCopyReference}
-                          className="p-1 text-[#6E615D] hover:text-[#800020] rounded hover:bg-white transition-colors"
-                          title="Copy reference number"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            {copiedRef ? 'check' : 'content_copy'}
-                          </span>
-                        </button>
-                      </div>
+                  <div className="bg-[#FAF7F2] border border-[#EADBCC] rounded-2xl p-4 mb-8 max-w-sm mx-auto flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-[11px] text-[#8C7E7A] block">Reference Number</span>
+                      <span className="font-mono font-semibold text-[#800020] text-sm">{submittedReference}</span>
                     </div>
-
-                    <div className="space-y-2 text-xs text-[#6E615D]">
-                      <div className="flex justify-between">
-                        <span>Inquiry Type:</span>
-                        <span className="font-medium text-[#332927] text-right">{submittedData.subject}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Email Contact:</span>
-                        <span className="font-medium text-[#332927]">{submittedData.email}</span>
-                      </div>
-                      {submittedData.phone && (
-                        <div className="flex justify-between">
-                          <span>Phone / WhatsApp:</span>
-                          <span className="font-medium text-[#332927]">{submittedData.phone}</span>
-                        </div>
-                      )}
-                      {submittedData.orderNumber && (
-                        <div className="flex justify-between">
-                          <span>Order Reference:</span>
-                          <span className="font-medium text-[#800020]">{submittedData.orderNumber}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span>Expected Turnaround:</span>
-                        <span className="font-medium text-emerald-700">&lt; 4 Hours</span>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyReference}
+                      className="px-3 py-1.5 rounded-lg border border-[#D4AF37] text-[#800020] hover:bg-white text-xs font-medium transition-colors cursor-pointer"
+                    >
+                      {copiedRef ? 'Copied' : 'Copy'}
+                    </button>
                   </div>
 
                   {/* Action Buttons */}
@@ -335,9 +232,9 @@ export const ContactPage: React.FC<ContactPageProps> = ({
                     <button
                       type="button"
                       onClick={handleResetForm}
-                      className="w-full sm:w-auto px-6 py-3 border border-[#800020] text-[#800020] hover:bg-[#800020]/5 rounded-xl text-xs font-medium uppercase tracking-wider transition-colors"
+                      className="w-full sm:w-auto px-6 py-2.5 border border-[#800020] text-[#800020] hover:bg-[#800020]/5 rounded-xl text-xs font-medium uppercase tracking-wider transition-colors cursor-pointer"
                     >
-                      Submit Another Inquiry
+                      Send Another Message
                     </button>
                     <button
                       type="button"
@@ -345,253 +242,140 @@ export const ContactPage: React.FC<ContactPageProps> = ({
                         if (onSelectCategory) onSelectCategory('all');
                         setCurrentView('shop');
                       }}
-                      className="w-full sm:w-auto px-6 py-3 bg-[#800020] text-[#FFF9F2] hover:bg-[#600018] rounded-xl text-xs font-medium uppercase tracking-wider transition-colors shadow-sm"
+                      className="w-full sm:w-auto px-6 py-2.5 bg-[#800020] text-[#FFF9F2] hover:bg-[#600018] rounded-xl text-xs font-medium uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
                     >
-                      Explore Festive Catalogue
+                      Return to Shop
                     </button>
                   </div>
                 </div>
               ) : (
-                /* INQUIRY FORM */
-                <form onSubmit={handleSubmit} noValidate className="space-y-6">
-                  <div>
-                    <h2 className="font-serif text-xl sm:text-2xl text-[#332927] mb-1">
-                      Send a Concierge Request
+                /* CLEAN, PREMIUM INQUIRY FORM */
+                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                  <div className="mb-6">
+                    <h2 className="font-serif text-2xl text-[#332927] mb-1.5">
+                      Send a Message
                     </h2>
-                    <p className="text-xs text-[#6E615D]">
-                      Please share your requirements below. Every inquiry is personally handled by our artisan liaison team.
+                    <p className="text-xs sm:text-sm text-[#7A6E6A]">
+                      Fill out the fields below and we will respond as soon as possible.
                     </p>
                   </div>
+
+                  {/* Submission Error Alert */}
+                  {submitError && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3 text-xs text-red-800">
+                      <span className="material-symbols-outlined text-[18px] text-red-600 shrink-0 mt-0.5">
+                        error
+                      </span>
+                      <p className="text-red-700 leading-relaxed">{submitError}</p>
+                    </div>
+                  )}
 
                   {/* Row 1: Name & Email */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="name" className="block text-xs font-medium text-[#332927] mb-1.5">
+                      <label htmlFor="name" className="block text-xs font-medium text-[#4A3E3B] mb-1.5">
                         Full Name <span className="text-[#800020]">*</span>
                       </label>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-[#A69792]">
-                          person
-                        </span>
-                        <input
-                          id="name"
-                          type="text"
-                          value={formData.name}
-                          onChange={e => {
-                            setFormData(prev => ({ ...prev, name: e.target.value }));
-                            if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
-                          }}
-                          placeholder="e.g. Radhika Deshmukh"
-                          className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#FFFDF9] border rounded-xl outline-none transition-colors ${
-                            errors.name
-                              ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400'
-                              : 'border-[#E6D7C8] focus:border-[#800020] focus:ring-1 focus:ring-[#800020]/20'
-                          }`}
-                        />
-                      </div>
+                      <input
+                        id="name"
+                        type="text"
+                        autoComplete="name"
+                        value={formData.name}
+                        onChange={e => {
+                          setFormData(prev => ({ ...prev, name: e.target.value }));
+                          if (errors.name) setErrors(prev => ({ ...prev, name: undefined }));
+                        }}
+                        className={`w-full px-4 py-2.5 text-xs sm:text-sm bg-[#FCFBF9] border rounded-xl outline-none transition-all ${
+                          errors.name
+                            ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-[#E6DDD3] focus:border-[#800020] focus:bg-white focus:ring-2 focus:ring-[#800020]/10'
+                        }`}
+                      />
                       {errors.name && (
-                        <p className="text-[11px] text-red-600 mt-1 pl-1">{errors.name}</p>
+                        <p className="text-[11px] text-red-600 mt-1">{errors.name}</p>
                       )}
                     </div>
 
                     <div>
-                      <label htmlFor="email" className="block text-xs font-medium text-[#332927] mb-1.5">
+                      <label htmlFor="email" className="block text-xs font-medium text-[#4A3E3B] mb-1.5">
                         Email Address <span className="text-[#800020]">*</span>
                       </label>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-[#A69792]">
-                          mail
-                        </span>
-                        <input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={e => {
-                            setFormData(prev => ({ ...prev, email: e.target.value }));
-                            if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
-                          }}
-                          placeholder="radhika@example.com"
-                          className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#FFFDF9] border rounded-xl outline-none transition-colors ${
-                            errors.email
-                              ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400'
-                              : 'border-[#E6D7C8] focus:border-[#800020] focus:ring-1 focus:ring-[#800020]/20'
-                          }`}
-                        />
-                      </div>
+                      <input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        value={formData.email}
+                        onChange={e => {
+                          setFormData(prev => ({ ...prev, email: e.target.value }));
+                          if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                        }}
+                        className={`w-full px-4 py-2.5 text-xs sm:text-sm bg-[#FCFBF9] border rounded-xl outline-none transition-all ${
+                          errors.email
+                            ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400'
+                            : 'border-[#E6DDD3] focus:border-[#800020] focus:bg-white focus:ring-2 focus:ring-[#800020]/10'
+                        }`}
+                      />
                       {errors.email && (
-                        <p className="text-[11px] text-red-600 mt-1 pl-1">{errors.email}</p>
+                        <p className="text-[11px] text-red-600 mt-1">{errors.email}</p>
                       )}
                     </div>
                   </div>
 
-                  {/* Row 2: Phone & Order ID */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="phone" className="block text-xs font-medium text-[#332927] mb-1.5">
-                        Phone / WhatsApp <span className="text-[#A69792] text-[11px]">(Optional)</span>
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-[#A69792]">
-                          call
-                        </span>
-                        <input
-                          id="phone"
-                          type="tel"
-                          value={formData.phone}
-                          onChange={e => {
-                            setFormData(prev => ({ ...prev, phone: e.target.value }));
-                            if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }));
-                          }}
-                          placeholder="+91 98200 12345"
-                          className={`w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#FFFDF9] border rounded-xl outline-none transition-colors ${
-                            errors.phone
-                              ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400'
-                              : 'border-[#E6D7C8] focus:border-[#800020] focus:ring-1 focus:ring-[#800020]/20'
-                          }`}
-                        />
-                      </div>
-                      {errors.phone && (
-                        <p className="text-[11px] text-red-600 mt-1 pl-1">{errors.phone}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label htmlFor="orderNumber" className="block text-xs font-medium text-[#332927]">
-                          Order Number <span className="text-[#A69792] text-[11px]">(Optional)</span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setIsOrderLookupOpen(true)}
-                          className="text-[11px] text-[#800020] hover:underline"
-                        >
-                          Lookup Order
-                        </button>
-                      </div>
-                      <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[18px] text-[#A69792]">
-                          inventory_2
-                        </span>
-                        <input
-                          id="orderNumber"
-                          type="text"
-                          value={formData.orderNumber}
-                          onChange={e => setFormData(prev => ({ ...prev, orderNumber: e.target.value }))}
-                          placeholder="e.g. SJV-10023"
-                          className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-[#FFFDF9] border border-[#E6D7C8] rounded-xl outline-none focus:border-[#800020] focus:ring-1 focus:ring-[#800020]/20 transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Subject Dropdown */}
+                  {/* Row 2: Phone */}
                   <div>
-                    <label htmlFor="subject" className="block text-xs font-medium text-[#332927] mb-1.5">
-                      Subject / Inquiry Category <span className="text-[#800020]">*</span>
+                    <label htmlFor="phone" className="block text-xs font-medium text-[#4A3E3B] mb-1.5">
+                      Phone / WhatsApp <span className="text-[#A69792] text-[11px] font-normal">(Optional)</span>
                     </label>
-                    <div className="relative">
-                      <select
-                        id="subject"
-                        value={formData.subject}
-                        onChange={e => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                        className="w-full px-4 py-2.5 text-xs sm:text-sm bg-[#FFFDF9] border border-[#E6D7C8] rounded-xl outline-none focus:border-[#800020] focus:ring-1 focus:ring-[#800020]/20 transition-colors appearance-none pr-10"
-                      >
-                        {INQUIRY_SUBJECTS.map(subj => (
-                          <option key={subj} value={subj}>
-                            {subj}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-[20px] text-[#A69792] pointer-events-none">
-                        expand_more
-                      </span>
-                    </div>
+                    <input
+                      id="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      value={formData.phone}
+                      onChange={e => {
+                        setFormData(prev => ({ ...prev, phone: e.target.value }));
+                        if (errors.phone) setErrors(prev => ({ ...prev, phone: undefined }));
+                      }}
+                      className={`w-full px-4 py-2.5 text-xs sm:text-sm bg-[#FCFBF9] border rounded-xl outline-none transition-all ${
+                        errors.phone
+                          ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400'
+                          : 'border-[#E6DDD3] focus:border-[#800020] focus:bg-white focus:ring-2 focus:ring-[#800020]/10'
+                      }`}
+                    />
+                    {errors.phone && (
+                      <p className="text-[11px] text-red-600 mt-1">{errors.phone}</p>
+                    )}
                   </div>
 
-                  {/* Preferred Reply Channel */}
+                  {/* Row 3: Message */}
                   <div>
-                    <label className="block text-xs font-medium text-[#332927] mb-1.5">
-                      Preferred Mode of Concierge Reply
+                    <label htmlFor="message" className="block text-xs font-medium text-[#4A3E3B] mb-1.5">
+                      Your Message <span className="text-[#800020]">*</span>
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, preferredMethod: 'email' }))}
-                        className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
-                          formData.preferredMethod === 'email'
-                            ? 'bg-[#800020]/5 border-[#800020] text-[#800020] font-semibold'
-                            : 'bg-[#FFFDF9] border-[#E6D7C8] text-[#6E615D] hover:border-[#800020]/40'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">mail</span>
-                        <span>Email</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, preferredMethod: 'whatsapp' }))}
-                        className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
-                          formData.preferredMethod === 'whatsapp'
-                            ? 'bg-emerald-50 border-emerald-600 text-emerald-800 font-semibold'
-                            : 'bg-[#FFFDF9] border-[#E6D7C8] text-[#6E615D] hover:border-emerald-500/40'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">chat</span>
-                        <span>WhatsApp</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, preferredMethod: 'phone' }))}
-                        className={`py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
-                          formData.preferredMethod === 'phone'
-                            ? 'bg-[#800020]/5 border-[#800020] text-[#800020] font-semibold'
-                            : 'bg-[#FFFDF9] border-[#E6D7C8] text-[#6E615D] hover:border-[#800020]/40'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">phone_enabled</span>
-                        <span>Phone Call</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Message Field */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label htmlFor="message" className="block text-xs font-medium text-[#332927]">
-                        Your Inquiry / Custom Requirements <span className="text-[#800020]">*</span>
-                      </label>
-                      <span className="text-[11px] text-[#A69792]">
-                        {formData.message.length}/1000
-                      </span>
-                    </div>
                     <textarea
                       id="message"
                       rows={5}
-                      maxLength={1000}
                       value={formData.message}
                       onChange={e => {
                         setFormData(prev => ({ ...prev, message: e.target.value }));
                         if (errors.message) setErrors(prev => ({ ...prev, message: undefined }));
                       }}
-                      placeholder="Please describe how we can assist you. For wedding favors or bespoke corporate hampers, mention estimated quantity, target dates, and engraving preferences."
-                      className={`w-full p-4 text-xs sm:text-sm bg-[#FFFDF9] border rounded-xl outline-none transition-colors resize-y leading-relaxed ${
+                      className={`w-full p-4 text-xs sm:text-sm bg-[#FCFBF9] border rounded-xl outline-none transition-all resize-y leading-relaxed ${
                         errors.message
                           ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-400'
-                          : 'border-[#E6D7C8] focus:border-[#800020] focus:ring-1 focus:ring-[#800020]/20'
+                          : 'border-[#E6DDD3] focus:border-[#800020] focus:bg-white focus:ring-2 focus:ring-[#800020]/10'
                       }`}
                     />
                     {errors.message && (
-                      <p className="text-[11px] text-red-600 mt-1 pl-1">{errors.message}</p>
+                      <p className="text-[11px] text-red-600 mt-1">{errors.message}</p>
                     )}
                   </div>
 
-                  {/* Submit Button */}
-                  <div>
+                  {/* Submit Button & Subtext */}
+                  <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full py-3.5 px-6 bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] rounded-xl text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group cursor-pointer"
+                      className="py-3 px-8 bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] rounded-xl text-xs sm:text-sm font-semibold uppercase tracking-wider transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
                     >
                       {isSubmitting ? (
                         <>
@@ -599,140 +383,130 @@ export const ContactPage: React.FC<ContactPageProps> = ({
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          <span>Transmitting to Atelier Concierge...</span>
+                          <span>Sending...</span>
                         </>
                       ) : (
                         <>
-                          <span>Transmit Concierge Request</span>
-                          <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
-                            send
-                          </span>
+                          <span>Send Message</span>
+                          <span className="material-symbols-outlined text-[17px]">send</span>
                         </>
                       )}
                     </button>
-                    <p className="text-center text-[11px] text-[#A69792] mt-3">
-                      Your details are handled with utmost discretion. No promotional spam, ever.
-                    </p>
+                    <span className="text-[11px] text-[#8C7E7A]">
+                      Typical response within 4 hours
+                    </span>
                   </div>
                 </form>
               )}
             </div>
 
-            {/* Right 5 Cols: Direct Touchpoints & Heritage Details */}
+            {/* Right 5 Cols: Unified Atelier Concierge Card */}
             <div className="lg:col-span-5 space-y-6">
-              {/* WhatsApp Fast Channel */}
-              <div className="bg-[#128C7E]/10 border border-[#128C7E]/30 rounded-3xl p-6 sm:p-7 relative overflow-hidden">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#075E54] block mb-1">
-                      Direct WhatsApp Line
-                    </span>
-                    <h3 className="font-serif text-lg sm:text-xl text-[#075E54]">
-                      Instant Festive Concierge
-                    </h3>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-sm">
-                    <span className="material-symbols-outlined text-[20px]">chat</span>
-                  </div>
+              <div className="bg-white rounded-3xl border border-[#EDE3D6] p-7 sm:p-8 shadow-sm space-y-6">
+                <div>
+                  <span className="text-[10px] font-semibold tracking-widest uppercase text-[#D4AF37] block mb-1">
+                    Direct Assistance
+                  </span>
+                  <h3 className="font-serif text-xl sm:text-2xl text-[#332927]">
+                    Atelier Concierge
+                  </h3>
+                  <p className="text-xs text-[#7A6E6A] mt-1 leading-relaxed">
+                    Our team is available for styling guidance, bridal hampers, and order inquiries.
+                  </p>
                 </div>
-                <p className="text-xs text-[#075E54]/90 mb-5 leading-relaxed">
-                  Need rapid confirmation for today's dispatch, gift box customization, or real-time brassware video preview?
-                </p>
+
+                {/* WhatsApp Quick Channel */}
                 <a
-                  href="https://wa.me/919820072528?text=Hello%20Sajavat%20Concierge%2C%20I%20would%20like%20assistance%20with%20an%20inquiry."
+                  href={siteSettings?.socialWhatsapp || 'https://wa.me/919811234567'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-[#25D366] hover:bg-[#1ebd59] text-white rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm"
+                  className="flex items-center justify-between p-3.5 rounded-2xl bg-[#FBF8F3] hover:bg-[#F5EFE6] border border-[#EADBCC] transition-colors group cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px]">send</span>
-                  <span>Open WhatsApp (+91 98200 72528)</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[20px]">chat</span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-semibold text-[#332927] block group-hover:text-[#800020] transition-colors">
+                        WhatsApp Concierge
+                      </span>
+                      <span className="text-[11px] text-[#7A6E6A]">
+                        {siteSettings?.contactPhone || '+91 98112 34567'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-medium text-emerald-700 bg-emerald-100/70 px-2.5 py-1 rounded-full">
+                    Chat
+                  </span>
                 </a>
-              </div>
 
-              {/* Atelier Details Card */}
-              <div className="bg-white rounded-3xl border border-[#F2E8DC] p-6 sm:p-7 space-y-6 shadow-sm">
-                <h3 className="font-serif text-lg text-[#332927] border-b border-[#F2E8DC] pb-3">
-                  Direct Atelier Channels
-                </h3>
-
-                {/* Email Channel */}
-                <div className="flex items-start gap-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#FFF9F2] border border-[#F2E8DC] flex items-center justify-center text-[#800020] shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-[18px]">alternate_email</span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] uppercase tracking-wider text-[#A69792] block font-medium">
-                      Atelier Inquiries &amp; Curations
-                    </span>
-                    <a
-                      href="mailto:concierge@sajavat.com"
-                      className="text-xs sm:text-sm font-medium text-[#800020] hover:underline"
-                    >
-                      concierge@sajavat.com
-                    </a>
-                    <p className="text-[11px] text-[#6E615D] mt-0.5">
-                      Replied within 4 hours during business days.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Phone Line */}
-                <div className="flex items-start gap-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-[#FFF9F2] border border-[#F2E8DC] flex items-center justify-center text-[#800020] shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-[18px]">phone_in_talk</span>
-                  </div>
-                  <div>
-                    <span className="text-[11px] uppercase tracking-wider text-[#A69792] block font-medium">
-                      Customer Service Helpline
-                    </span>
-                    <a
-                      href="tel:+918047108820"
-                      className="text-xs sm:text-sm font-medium text-[#332927] hover:text-[#800020]"
-                    >
-                      +91 (0) 80 4710 8820
-                    </a>
-                    <p className="text-[11px] text-[#6E615D] mt-0.5">
-                      Mon – Sat: 9:30 AM – 7:30 PM IST (Excl. Gazetted Holidays)
-                    </p>
-                  </div>
-                </div>
-
-                {/* Studio & Foundry Enclaves */}
-                <div className="flex items-start gap-3.5 pt-2 border-t border-[#F2E8DC]">
-                  <div className="w-9 h-9 rounded-xl bg-[#FFF9F2] border border-[#F2E8DC] flex items-center justify-center text-[#800020] shrink-0 mt-0.5">
-                    <span className="material-symbols-outlined text-[18px]">location_on</span>
-                  </div>
-                  <div className="text-xs text-[#6E615D] space-y-2">
-                    <div>
-                      <strong className="text-[#332927] block font-serif">Jaipur Flagship Studio</strong>
-                      <span>Hawa Mahal Enclave, Badi Chaupar, Pink City, Jaipur, Rajasthan 302002</span>
+                {/* Direct Touchpoints List */}
+                <div className="space-y-4 pt-2 border-t border-[#F0E6D8]">
+                  {/* Email */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#FFF9F2] border border-[#EADBCC] flex items-center justify-center text-[#800020] shrink-0 mt-0.5">
+                      <span className="material-symbols-outlined text-[18px]">mail</span>
                     </div>
                     <div>
-                      <strong className="text-[#332927] block font-serif">Brass Foundry Guild</strong>
-                      <span>Moradabad Artisanal Zone, Peetal Nagri, Uttar Pradesh 244001</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#A69792] block">
+                        Email
+                      </span>
+                      <a
+                        href={`mailto:${siteSettings?.contactEmail || 'concierge@sajavat.com'}`}
+                        className="text-xs sm:text-sm font-medium text-[#800020] hover:underline"
+                      >
+                        {siteSettings?.contactEmail || 'concierge@sajavat.com'}
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#FFF9F2] border border-[#EADBCC] flex items-center justify-center text-[#800020] shrink-0 mt-0.5">
+                      <span className="material-symbols-outlined text-[18px]">call</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[#A69792] block">
+                        Helpline
+                      </span>
+                      <a
+                        href={`tel:${(siteSettings?.contactPhone || '+91 98112 34567').replace(/[^0-9+]/g, '')}`}
+                        className="text-xs sm:text-sm font-medium text-[#332927] hover:text-[#800020]"
+                      >
+                        {siteSettings?.contactPhone || '+91 98112 34567'}
+                      </a>
+                      <p className="text-[11px] text-[#8C7E7A] mt-0.5">
+                        Mon – Sat: 9:30 AM – 7:30 PM IST
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div className="flex items-start gap-3.5 pt-2 border-t border-[#F0E6D8]">
+                    <div className="w-9 h-9 rounded-xl bg-[#FFF9F2] border border-[#EADBCC] flex items-center justify-center text-[#800020] shrink-0 mt-0.5">
+                      <span className="material-symbols-outlined text-[18px]">location_on</span>
+                    </div>
+                    <div className="text-xs text-[#7A6E6A]">
+                      <strong className="text-[#332927] block font-medium">Flagship Atelier &amp; Foundry</strong>
+                      <span>{siteSettings?.contactAddress || 'Sajavat Atelier, 14 Heritage Lane, Moradabad, UP 244001'}</span>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Real-Time Order Lookup Banner */}
-              <div className="bg-[#FFF5E6] border border-[#D4AF37]/40 rounded-3xl p-6 text-center shadow-sm">
-                <span className="material-symbols-outlined text-3xl text-[#D4AF37] mb-2">
-                  local_shipping
-                </span>
-                <h4 className="font-serif text-base text-[#332927] mb-1">
-                  Looking for Live Dispatch Status?
-                </h4>
-                <p className="text-xs text-[#6E615D] mb-4">
-                  Check current carrier checkpoints, estimated delivery dates, and waybill details in real time.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setIsOrderLookupOpen(true)}
-                  className="w-full py-2.5 px-4 bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm"
-                >
-                  Track My Order Now
-                </button>
+                {/* Subtle Order Track Action */}
+                <div className="pt-4 border-t border-[#F0E6D8] flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-[#332927] block">Have an active order?</span>
+                    <span className="text-[11px] text-[#8C7E7A]">Check live dispatch checkpoints</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsOrderLookupOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl border border-[#800020] text-[#800020] hover:bg-[#800020]/5 text-xs font-medium transition-colors cursor-pointer"
+                  >
+                    Track Order
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -848,17 +622,17 @@ export const ContactPage: React.FC<ContactPageProps> = ({
                 Peace of Mind
               </span>
               <h2 className="font-serif text-2xl sm:text-3xl text-[#332927] mb-4">
-                7-Day Break-Free Replacement Promise
+                Transit Safety &amp; Damage Protection
               </h2>
               <p className="text-sm text-[#6E615D] leading-relaxed mb-6">
-                Because every brass urli, diya, and hand-blown glass candle holder is irreplaceable for your festive celebrations, we guarantee zero friction if a transit mishap occurs.
+                Every artisanal brass urli, diya, and handcrafted décor heirloom is securely packed in reinforced, damage-resistant materials. In the rare event of transit mishandling, our concierge handles it with immediate priority.
               </p>
 
               <div className="space-y-4 text-xs sm:text-sm text-[#6E615D]">
                 <div className="p-4 bg-[#FFF9F2] rounded-2xl border border-[#F2E8DC]">
-                  <strong className="text-[#332927] block mb-1">1. Damaged or Defective Items</strong>
+                  <strong className="text-[#332927] block mb-1">1. Transit Damage or Breakage Assistance</strong>
                   <p className="text-xs leading-relaxed">
-                    In the rare event of transit breakage or casting flaws, simply WhatsApp or email our concierge within 7 days of delivery with photos of the outer box and affected artifact. We arrange an immediate free priority replacement.
+                    If any artifact arrives with transit damage, simply WhatsApp or email our concierge upon delivery with photographs of the packaging and affected piece. Our team will verify and resolve it promptly with white-glove support.
                   </p>
                 </div>
 
