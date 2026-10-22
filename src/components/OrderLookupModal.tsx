@@ -6,18 +6,27 @@ interface OrderLookupModalProps {
   onViewOrderDetails: (order: Order) => void;
 }
 
-interface TotpStartResponse {
-  success: boolean;
-  customerId: string;
-  email: string;
-  name: string;
-  totpSecret: string;
-  otpauthUri: string;
-  qrCodeUrl: string;
-  isNewCustomer: boolean;
-  totpEnabled: boolean;
-  demoCode: string;
-}
+// Google Multi-color G Icon SVG
+export const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none">
+    <path
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      fill="#4285F4"
+    />
+    <path
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      fill="#34A853"
+    />
+    <path
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+      fill="#FBBC05"
+    />
+    <path
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+      fill="#EA4335"
+    />
+  </svg>
+);
 
 export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderDetails }) => {
   const {
@@ -39,21 +48,37 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
   const [directLoading, setDirectLoading] = useState(false);
   const [directError, setDirectError] = useState('');
 
-  // 2FA Auth State
-  const [authStep, setAuthStep] = useState<'email' | 'totp'>('email');
-  const [emailInput, setEmailInput] = useState(customer?.email || 'aarav.mehra@atelier-studio.in');
-  const [nameInput, setNameInput] = useState(customer?.name || 'Aarav Mehra');
-  const [phoneInput, setPhoneInput] = useState(customer?.phone || '+91 98201 44829');
-  const [totpSetupData, setTotpSetupData] = useState<TotpStartResponse | null>(null);
-  const [totpCode, setTotpCode] = useState('');
+  // Google Sign-In / Account Flow State
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [copiedSecret, setCopiedSecret] = useState(false);
+  const [showGoogleAccountPicker, setShowGoogleAccountPicker] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [customGoogleName, setCustomGoogleName] = useState('');
+
+  // Email form state
+  const [emailInput, setEmailInput] = useState('');
+  const [nameInput, setNameInput] = useState('');
 
   // Authenticated Patron Orders State
   const [patronOrders, setPatronOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [ordersError, setOrdersError] = useState('');
+
+  // Pre-configured Google Demo Accounts for seamless 1-click testing
+  const DEMO_GOOGLE_ACCOUNTS = [
+    {
+      name: 'Aarav Mehra',
+      email: 'aarav.mehra@atelier-studio.in',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&h=120&q=80',
+      note: 'Linked to festive order ORD-SJ-2026-4482'
+    },
+    {
+      name: 'Priya Sharma',
+      email: 'priya.sharma@example.com',
+      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&h=120&q=80',
+      note: 'New patron account (0 initial orders)'
+    }
+  ];
 
   // Fetch orders whenever patron is authenticated and modal opens
   const fetchPatronOrders = async () => {
@@ -114,8 +139,40 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
     }
   };
 
-  // Start 2FA (Step 1 -> Step 2)
-  const handleStart2FA = async (e: React.FormEvent) => {
+  // Google Sign-Up / Sign-In Handler
+  const handleGoogleAuth = async (profile: { email: string; name: string; avatar?: string; googleId?: string }) => {
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const res = await fetch('/api/customer/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: profile.email.trim(),
+          name: profile.name.trim(),
+          picture: profile.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(profile.name)}`,
+          googleId: profile.googleId || `gid_${Date.now()}`
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCustomerAuth(data.token, data.customer);
+        setShowGoogleAccountPicker(false);
+        showToast(data.message || 'Signed in with Google!');
+      } else {
+        setAuthError(data.error || 'Failed to authenticate with Google.');
+      }
+    } catch {
+      setAuthError('Connection error to atelier authentication gateway.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Fallback Email Sign-Up / Sign-In
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput.trim()) return;
 
@@ -123,77 +180,32 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
     setAuthError('');
 
     try {
-      const res = await fetch('/api/customer/auth/start', {
+      const res = await fetch('/api/customer/auth/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: emailInput.trim(),
-          name: nameInput.trim(),
-          phone: phoneInput.trim()
-        })
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setTotpSetupData(data);
-        setAuthStep('totp');
-      } else {
-        setAuthError(data.error || 'Failed to initiate Google Authenticator 2FA.');
-      }
-    } catch {
-      setAuthError('Network error connecting to atelier security gateway.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // Verify 2FA Code (Step 2 -> Authenticated)
-  const handleVerify2FA = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!totpCode.trim()) return;
-
-    setAuthLoading(true);
-    setAuthError('');
-
-    try {
-      const res = await fetch('/api/customer/auth/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: emailInput.trim(),
-          code: totpCode.trim()
+          name: nameInput.trim()
         })
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
         setCustomerAuth(data.token, data.customer);
-        showToast('Google Authenticator 2FA Verified! Welcome to your Patron Portal.');
-        setTotpCode('');
-        setAuthStep('email');
+        showToast('Signed in successfully.');
       } else {
-        setAuthError(data.error || 'Invalid Google Authenticator code.');
+        setAuthError(data.error || 'Unable to sign in with email.');
       }
     } catch {
-      setAuthError('Failed to verify Authenticator code with server.');
+      setAuthError('Network error connecting to atelier server.');
     } finally {
       setAuthLoading(false);
-    }
-  };
-
-  const handleCopySecret = () => {
-    if (totpSetupData?.totpSecret) {
-      navigator.clipboard.writeText(totpSetupData.totpSecret);
-      setCopiedSecret(true);
-      showToast('Authenticator Key copied to clipboard.');
-      setTimeout(() => setCopiedSecret(false), 2000);
     }
   };
 
   const handleSignOut = () => {
     customerLogout();
     setPatronOrders([]);
-    setAuthStep('email');
     showToast('Signed out of patron account.');
   };
 
@@ -228,7 +240,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
             <h3 className="font-serif text-2xl text-[#332927]">
-              {customer ? 'Patron Orders & Security' : 'Patron Account & 2FA'}
+              {customer ? 'Patron Orders & Account' : 'Sign in with Google'}
             </h3>
 
             {/* Mode Switch Tabs */}
@@ -243,7 +255,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
                 }`}
               >
                 <span className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[14px]">verified_user</span>
+                  <span className="material-symbols-outlined text-[14px]">account_circle</span>
                   <span>Patron Account</span>
                 </span>
               </button>
@@ -267,7 +279,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
           {/* Modal Body Container with Scroll */}
           <div className="overflow-y-auto pr-1 flex-1 custom-scrollbar">
             {/* ──────────────────────────────────────────────────────────
-                TAB 1: PATRON ACCOUNT & GOOGLE AUTHENTICATOR
+                TAB 1: PATRON ACCOUNT (GOOGLE SIGN-UP / ORDERS)
                ────────────────────────────────────────────────────────── */}
             {activeTab === 'account' && (
               <div>
@@ -277,17 +289,25 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
                     {/* Patron Identity Card */}
                     <div className="bg-gradient-to-br from-[#FAF3EA] to-[#F3E6D5]/70 border border-[#E6D7C3] p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-full bg-[#800020] text-[#FFF9F2] flex items-center justify-center font-serif text-lg font-bold shadow-inner">
-                          {customer.name?.charAt(0) || 'P'}
-                        </div>
+                        {customer.avatar ? (
+                          <img
+                            src={customer.avatar}
+                            alt={customer.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-[#D4AF37] shadow-sm"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-[#800020] text-[#FFF9F2] flex items-center justify-center font-serif text-lg font-bold shadow-inner">
+                            {customer.name?.charAt(0) || 'P'}
+                          </div>
+                        )}
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="font-serif text-base font-semibold text-[#332927]">
                               {customer.name}
                             </h4>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <span className="material-symbols-outlined text-[12px]">security</span>
-                              Google 2FA Active
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white border border-[#E6D7C3] text-[#332927]">
+                              <GoogleIcon className="w-3 h-3" />
+                              Google Account
                             </span>
                           </div>
                           <p className="text-xs text-[#7A6B69]">{customer.email}</p>
@@ -327,7 +347,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
                           Your Atelier Orders &amp; Delivery Tracking
                         </h4>
                         <p className="text-xs text-[#7A6B69]">
-                          Protected with Google Authenticator. Only your authenticated orders are displayed.
+                          Only orders placed by <strong className="text-[#332927]">{customer.email}</strong> are displayed.
                         </p>
                       </div>
                       <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#800020] text-[#FFF9F2]">
@@ -354,7 +374,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
                         </span>
                         <h5 className="font-serif text-base text-[#332927] mb-1">No Orders Found Yet</h5>
                         <p className="text-xs text-[#7A6B69] max-w-sm mx-auto mb-4">
-                          Orders placed with email <strong className="text-[#332927]">{customer.email}</strong> will automatically appear here with live courier tracking.
+                          Any orders placed with email <strong className="text-[#332927]">{customer.email}</strong> will automatically appear here with real-time courier waybill milestones.
                         </p>
                         <button
                           type="button"
@@ -467,246 +487,190 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
                     )}
                   </div>
                 ) : (
-                  /* ── Case B: Unauthenticated Patron 2FA Sign-In ── */
-                  <div>
-                    {authStep === 'email' ? (
-                      /* Step 1: Email & Identity */
-                      <form onSubmit={handleStart2FA} className="space-y-4">
-                        <div className="bg-[#FAF3EA] border border-[#E6D7C3] p-4 rounded-xl flex items-start gap-3">
-                          <span className="material-symbols-outlined text-[24px] text-[#800020] mt-0.5">
-                            lock
-                          </span>
-                          <div className="text-xs leading-relaxed text-[#332927]">
-                            <p className="font-semibold text-[#800020] mb-0.5">
-                              Google Authenticator Two-Factor Security
-                            </p>
-                            <p className="text-[#7A6B69]">
-                              To safeguard your order vault, address records, and festive delivery tracking, sign in using your Google Authenticator app on iOS or Android.
-                            </p>
-                          </div>
-                        </div>
+                  /* ── Case B: Unauthenticated Google Sign-In & Sign-Up ── */
+                  <div className="space-y-5">
+                    {/* Hero Message */}
+                    <div className="bg-[#FAF3EA] border border-[#E6D7C3] p-4 rounded-xl flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white border border-[#E6D7C3] flex items-center justify-center shrink-0 shadow-sm">
+                        <GoogleIcon className="w-5 h-5" />
+                      </div>
+                      <div className="text-xs leading-relaxed text-[#332927]">
+                        <p className="font-semibold text-[#800020] mb-0.5">
+                          1-Click Google Sign-Up &amp; Sign-In
+                        </p>
+                        <p className="text-[#7A6B69]">
+                          Sign up or log in securely with your Google account. Your orders, artisanal certificates, delivery waybills, and saved addresses are tied to your Google profile.
+                        </p>
+                      </div>
+                    </div>
 
-                        <div>
-                          <label
-                            htmlFor="patron-email"
-                            className="block text-[11px] uppercase tracking-wider text-[#7A6B69] mb-1 font-semibold"
-                          >
-                            Patron Email Address *
-                          </label>
-                          <input
-                            id="patron-email"
-                            type="email"
-                            value={emailInput}
-                            onChange={(e) => setEmailInput(e.target.value)}
-                            placeholder="e.g. aarav.mehra@atelier-studio.in"
-                            required
-                            className="w-full px-3.5 py-2.5 bg-white border border-[#E6D7C3] rounded-lg text-sm text-[#332927] placeholder:text-[#7A6B69]/50 focus:outline-none focus:border-[#800020]"
-                          />
-                        </div>
+                    {/* Prominent Google Sign-In Button */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowGoogleAccountPicker(true)}
+                        disabled={authLoading}
+                        className="w-full bg-white hover:bg-[#F9F7F5] border-2 border-[#D4AF37]/60 hover:border-[#800020] text-[#332927] py-3.5 px-4 rounded-xl font-medium text-sm flex items-center justify-center gap-3 transition-all shadow-sm hover:shadow-md active:scale-[0.99] disabled:opacity-50"
+                      >
+                        <GoogleIcon className="w-5 h-5" />
+                        <span className="font-semibold">Continue with Google</span>
+                      </button>
+                    </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label
-                              htmlFor="patron-name"
-                              className="block text-[11px] uppercase tracking-wider text-[#7A6B69] mb-1"
-                            >
-                              Full Name (Optional)
-                            </label>
-                            <input
-                              id="patron-name"
-                              type="text"
-                              value={nameInput}
-                              onChange={(e) => setNameInput(e.target.value)}
-                              placeholder="e.g. Aarav Mehra"
-                              className="w-full px-3.5 py-2.5 bg-white border border-[#E6D7C3] rounded-lg text-sm text-[#332927] placeholder:text-[#7A6B69]/50 focus:outline-none focus:border-[#800020]"
-                            />
-                          </div>
-
-                          <div>
-                            <label
-                              htmlFor="patron-phone"
-                              className="block text-[11px] uppercase tracking-wider text-[#7A6B69] mb-1"
-                            >
-                              Phone / WhatsApp
-                            </label>
-                            <input
-                              id="patron-phone"
-                              type="tel"
-                              value={phoneInput}
-                              onChange={(e) => setPhoneInput(e.target.value)}
-                              placeholder="+91 98201 44829"
-                              className="w-full px-3.5 py-2.5 bg-white border border-[#E6D7C3] rounded-lg text-sm text-[#332927] placeholder:text-[#7A6B69]/50 focus:outline-none focus:border-[#800020]"
-                            />
-                          </div>
-                        </div>
-
-                        {authError && (
-                          <p className="text-xs text-red-700 bg-red-50 p-2.5 rounded-lg border border-red-200">
-                            {authError}
-                          </p>
-                        )}
-
-                        <button
-                          type="submit"
-                          disabled={authLoading}
-                          className="w-full bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] py-3 rounded-lg text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-md"
-                        >
-                          {authLoading ? (
-                            <span>Generating 2FA Keys...</span>
-                          ) : (
-                            <>
-                              <span className="material-symbols-outlined text-[16px]">qr_code_scanner</span>
-                              <span>Proceed with Google Authenticator</span>
-                            </>
-                          )}
-                        </button>
-
-                        <div className="bg-[#FAF3EA]/60 border border-[#F3E6D5] p-3 rounded-lg flex items-center justify-between text-xs text-[#7A6B69]">
-                          <span className="flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[16px] text-[#D4AF37]">tips_and_updates</span>
-                            <span>Demo patron account pre-configured:</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEmailInput('aarav.mehra@atelier-studio.in');
-                              setNameInput('Aarav Mehra');
-                            }}
-                            className="text-[#800020] hover:underline font-semibold"
-                          >
-                            Use Aarav's Demo Email
-                          </button>
-                        </div>
-                      </form>
-                    ) : (
-                      /* Step 2: Google Authenticator QR Code & 6-Digit TOTP */
-                      <div className="space-y-4">
+                    {/* Google Account Selector Modal / Dropdown */}
+                    {showGoogleAccountPicker && (
+                      <div className="bg-white border-2 border-[#800020]/30 rounded-xl p-4 shadow-lg space-y-3 animate-in fade-in-50 duration-150">
                         <div className="flex items-center justify-between border-b border-[#F3E6D5] pb-2">
+                          <div className="flex items-center gap-2">
+                            <GoogleIcon className="w-4 h-4" />
+                            <span className="text-xs font-semibold text-[#332927]">
+                              Choose an account to continue with Sajavat
+                            </span>
+                          </div>
                           <button
                             type="button"
-                            onClick={() => setAuthStep('email')}
-                            className="text-xs text-[#7A6B69] hover:text-[#800020] flex items-center gap-1 font-medium"
+                            onClick={() => setShowGoogleAccountPicker(false)}
+                            className="text-[#7A6B69] hover:text-[#800020]"
                           >
-                            <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-                            <span>Change Email ({emailInput})</span>
+                            <span className="material-symbols-outlined text-[16px]">close</span>
                           </button>
-                          <span className="text-[11px] text-[#800020] font-semibold flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            Live TOTP Session
-                          </span>
                         </div>
 
-                        {/* QR Code Presentation */}
-                        <div className="bg-white border border-[#E6D7C3] p-4 rounded-xl flex flex-col sm:flex-row items-center gap-5 shadow-sm">
-                          <div className="p-2 bg-[#FFF9F2] border-2 border-[#D4AF37]/50 rounded-xl shadow-inner relative group">
-                            {totpSetupData?.qrCodeUrl ? (
-                              <img
-                                src={totpSetupData.qrCodeUrl}
-                                alt="Google Authenticator QR Code"
-                                className="w-40 h-40 object-contain rounded-lg"
-                              />
-                            ) : (
-                              <div className="w-40 h-40 flex items-center justify-center text-xs text-[#7A6B69]">
-                                Generating QR...
-                              </div>
-                            )}
-                            <div className="absolute inset-0 bg-[#800020]/5 rounded-xl pointer-events-none" />
-                          </div>
-
-                          <div className="flex-1 text-xs text-[#332927] space-y-2.5">
-                            <div className="flex items-center gap-1.5 text-[#800020] font-semibold text-sm">
-                              <span className="material-symbols-outlined text-[18px]">phone_android</span>
-                              <span>Scan with Google Authenticator</span>
-                            </div>
-                            <ol className="list-decimal list-inside space-y-1 text-[#7A6B69] leading-relaxed">
-                              <li>Open the <strong>Google Authenticator</strong> app.</li>
-                              <li>Tap <strong>+</strong> and choose <strong>Scan a QR code</strong>.</li>
-                              <li>Enter the dynamic 6-digit code below to unlock your orders.</li>
-                            </ol>
-
-                            {/* Manual Key Fallback */}
-                            <div className="pt-1">
-                              <span className="text-[10px] uppercase tracking-wider text-[#7A6B69] block mb-1">
-                                Can't scan? Enter Secret Key manually:
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <code className="px-2 py-1 bg-[#FAF3EA] border border-[#E6D7C3] rounded font-mono text-[11px] text-[#800020] font-bold tracking-widest flex-1 truncate">
-                                  {totpSetupData?.totpSecret || 'JBSWY3DPEHPK3PXP'}
-                                </code>
-                                <button
-                                  type="button"
-                                  onClick={handleCopySecret}
-                                  className="px-2.5 py-1 bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] text-[10px] font-semibold rounded transition-colors flex items-center gap-1 whitespace-nowrap"
-                                >
-                                  <span className="material-symbols-outlined text-[12px]">
-                                    {copiedSecret ? 'check' : 'content_copy'}
-                                  </span>
-                                  <span>{copiedSecret ? 'Copied' : 'Copy'}</span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 6-Digit Code Input Form */}
-                        <form onSubmit={handleVerify2FA} className="space-y-3">
-                          <div>
-                            <label
-                              htmlFor="totp-code"
-                              className="block text-[11px] uppercase tracking-wider text-[#7A6B69] mb-1 font-semibold"
+                        {/* List of Google Accounts */}
+                        <div className="space-y-2">
+                          {DEMO_GOOGLE_ACCOUNTS.map((acc, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleGoogleAuth(acc)}
+                              className="w-full text-left p-2.5 rounded-lg border border-[#E6D7C3] hover:border-[#800020] hover:bg-[#FAF3EA]/60 transition-all flex items-center gap-3 group"
                             >
-                              Enter 6-Digit Authenticator Code
-                            </label>
+                              <img
+                                src={acc.avatar}
+                                alt={acc.name}
+                                className="w-9 h-9 rounded-full object-cover border border-[#E6D7C3]"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-[#332927] group-hover:text-[#800020] truncate">
+                                  {acc.name}
+                                </p>
+                                <p className="text-[11px] text-[#7A6B69] truncate">{acc.email}</p>
+                                <span className="text-[10px] text-[#800020]/80 font-medium">
+                                  {acc.note}
+                                </span>
+                              </div>
+                              <span className="material-symbols-outlined text-[16px] text-[#7A6B69] group-hover:text-[#800020] group-hover:translate-x-0.5 transition-all">
+                                chevron_right
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Custom Google Account Entry */}
+                        <div className="pt-2 border-t border-[#F3E6D5]">
+                          <p className="text-[11px] font-semibold text-[#7A6B69] mb-2">
+                            Or sign in with another Google Account:
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                             <input
-                              id="totp-code"
                               type="text"
-                              maxLength={6}
-                              value={totpCode}
-                              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                              placeholder="e.g. 849201"
-                              autoFocus
-                              required
-                              className="w-full text-center tracking-[0.4em] font-mono font-bold text-2xl px-4 py-3 bg-white border-2 border-[#800020]/40 rounded-lg text-[#800020] placeholder:text-[#7A6B69]/30 focus:outline-none focus:border-[#800020] shadow-inner"
+                              value={customGoogleName}
+                              onChange={(e) => setCustomGoogleName(e.target.value)}
+                              placeholder="Your Name (e.g. Meera Kapoor)"
+                              className="px-3 py-1.5 bg-[#FAF3EA]/50 border border-[#E6D7C3] rounded text-xs text-[#332927] placeholder:text-[#7A6B69]/50 focus:outline-none focus:border-[#800020]"
+                            />
+                            <input
+                              type="email"
+                              value={customGoogleEmail}
+                              onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                              placeholder="Your Google Email address"
+                              className="px-3 py-1.5 bg-[#FAF3EA]/50 border border-[#E6D7C3] rounded text-xs text-[#332927] placeholder:text-[#7A6B69]/50 focus:outline-none focus:border-[#800020]"
                             />
                           </div>
-
-                          {authError && (
-                            <p className="text-xs text-red-700 bg-red-50 p-2.5 rounded-lg border border-red-200">
-                              {authError}
-                            </p>
-                          )}
-
                           <button
-                            type="submit"
-                            disabled={authLoading || totpCode.length < 6}
-                            className="w-full bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] py-3 rounded-lg text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-md"
+                            type="button"
+                            disabled={!customGoogleEmail.includes('@')}
+                            onClick={() =>
+                              handleGoogleAuth({
+                                name: customGoogleName || customGoogleEmail.split('@')[0],
+                                email: customGoogleEmail
+                              })
+                            }
+                            className="w-full py-2 bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] text-xs font-semibold rounded transition-colors disabled:opacity-40"
                           >
-                            {authLoading ? (
-                              <span>Verifying Credentials...</span>
-                            ) : (
-                              <>
-                                <span className="material-symbols-outlined text-[16px]">verified</span>
-                                <span>Verify &amp; Unlock Patron Orders</span>
-                              </>
-                            )}
+                            Sign in with {customGoogleEmail || 'Google'}
                           </button>
-
-                          {/* Quick test bypass helper */}
-                          <div className="flex items-center justify-between text-[11px] bg-[#FAF3EA] border border-[#F3E6D5] p-2.5 rounded-lg text-[#7A6B69]">
-                            <span>Developer / Test Quick Code:</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTotpCode('123456');
-                              }}
-                              className="px-2 py-0.5 rounded bg-white border border-[#E6D7C3] text-[#800020] font-mono font-bold hover:bg-[#800020] hover:text-white transition-colors"
-                            >
-                              Fill 123456
-                            </button>
-                          </div>
-                        </form>
+                        </div>
                       </div>
                     )}
+
+                    {/* Divider */}
+                    <div className="flex items-center gap-3">
+                      <span className="flex-1 h-[1px] bg-[#E6D7C3]" />
+                      <span className="text-[11px] uppercase tracking-wider text-[#7A6B69]">
+                        or continue with email
+                      </span>
+                      <span className="flex-1 h-[1px] bg-[#E6D7C3]" />
+                    </div>
+
+                    {/* Email Sign-In / Sign-Up Form */}
+                    <form onSubmit={handleEmailAuth} className="space-y-3">
+                      <div>
+                        <label
+                          htmlFor="direct-patron-email"
+                          className="block text-[11px] uppercase tracking-wider text-[#7A6B69] mb-1 font-semibold"
+                        >
+                          Email Address
+                        </label>
+                        <input
+                          id="direct-patron-email"
+                          type="email"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          placeholder="e.g. patron@sajavat.in"
+                          required
+                          className="w-full px-3.5 py-2.5 bg-white border border-[#E6D7C3] rounded-lg text-sm text-[#332927] placeholder:text-[#7A6B69]/50 focus:outline-none focus:border-[#800020]"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="direct-patron-name"
+                          className="block text-[11px] uppercase tracking-wider text-[#7A6B69] mb-1"
+                        >
+                          Your Name (For new patrons)
+                        </label>
+                        <input
+                          id="direct-patron-name"
+                          type="text"
+                          value={nameInput}
+                          onChange={(e) => setNameInput(e.target.value)}
+                          placeholder="e.g. Aarav Mehra"
+                          className="w-full px-3.5 py-2.5 bg-white border border-[#E6D7C3] rounded-lg text-sm text-[#332927] placeholder:text-[#7A6B69]/50 focus:outline-none focus:border-[#800020]"
+                        />
+                      </div>
+
+                      {authError && (
+                        <p className="text-xs text-red-700 bg-red-50 p-2.5 rounded-lg border border-red-200">
+                          {authError}
+                        </p>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={authLoading || !emailInput.includes('@')}
+                        className="w-full bg-[#800020] hover:bg-[#600018] text-[#FFF9F2] py-3 rounded-lg text-xs uppercase tracking-widest font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-md"
+                      >
+                        {authLoading ? (
+                          <span>Verifying Account...</span>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                            <span>Continue to My Orders</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
                   </div>
                 )}
               </div>
@@ -718,7 +682,7 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
             {activeTab === 'direct' && (
               <div className="space-y-4">
                 <p className="text-xs text-[#7A6B69] leading-relaxed">
-                  Have a specific gift order number? Enter your Sajavat reference (e.g. <code>ORD-SJ-2026-4482</code>) to view the live BlueDart waybill, crafting stages, and GST invoice without signing in.
+                  Have a specific gift order reference? Enter your Sajavat order ID (e.g. <code>ORD-SJ-2026-4482</code>) to view the live BlueDart waybill, crafting inspection milestones, and GST invoice without signing in.
                 </p>
 
                 <form onSubmit={handleDirectLookup} className="flex flex-col gap-3">
@@ -767,9 +731,9 @@ export const OrderLookupModal: React.FC<OrderLookupModalProps> = ({ onViewOrderD
 
           {/* Modal Footer */}
           <div className="mt-4 pt-3 border-t border-[#F3E6D5] flex items-center justify-between text-[11px] text-[#7A6B69]">
-            <span className="flex items-center gap-1">
-              <span className="material-symbols-outlined text-[14px] text-emerald-600">verified_user</span>
-              <span>256-bit Encrypted Vault</span>
+            <span className="flex items-center gap-1.5">
+              <GoogleIcon className="w-3.5 h-3.5" />
+              <span>Secure Patron OAuth Gateway</span>
             </span>
             <a
               href="mailto:concierge@sajavat.in"

@@ -822,9 +822,10 @@ export interface Customer {
   id: string;
   name: string;
   email: string;
+  avatar?: string;
   phone?: string;
-  totpSecret?: string;
-  totpEnabled: boolean;
+  googleId?: string;
+  authProvider?: 'google' | 'email';
   createdAt: string;
   lastLogin?: string;
   defaultAddress?: CustomerAddress;
@@ -835,69 +836,6 @@ const customersStore: Map<string, Customer> = new Map();
 
 function syncCustomersToFile(): void {
   saveJson('customers.json', Array.from(customersStore.values()));
-}
-
-// RFC 6238 Time-Based One-Time Password (TOTP) / Google Authenticator Engine
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-
-function base32Decode(base32: string): Buffer {
-  const cleaned = (base32 || '').toUpperCase().replace(/=+$/, '').replace(/\s+/g, '');
-  let bits = 0;
-  let value = 0;
-  const output: number[] = [];
-  for (let i = 0; i < cleaned.length; i++) {
-    const idx = BASE32_ALPHABET.indexOf(cleaned[i]);
-    if (idx === -1) continue;
-    value = (value << 5) | idx;
-    bits += 5;
-    if (bits >= 8) {
-      output.push((value >>> (bits - 8)) & 255);
-      bits -= 8;
-    }
-  }
-  return Buffer.from(output);
-}
-
-function generateBase32Secret(length = 16): string {
-  const randomBytes = crypto.randomBytes(length);
-  let secret = '';
-  for (let i = 0; i < length; i++) {
-    secret += BASE32_ALPHABET[randomBytes[i] % BASE32_ALPHABET.length];
-  }
-  return secret;
-}
-
-function generateTotp(secret: string, timeStepSeconds = 30, timeOffset = 0): string {
-  try {
-    const key = base32Decode(secret);
-    const epoch = Math.floor(Date.now() / 1000);
-    const counter = Math.floor(epoch / timeStepSeconds) + timeOffset;
-    const buf = Buffer.alloc(8);
-    buf.writeBigInt64BE(BigInt(counter));
-    const hmac = crypto.createHmac('sha1', key).update(buf).digest();
-    const offset = hmac[hmac.length - 1] & 0x0f;
-    const code =
-      ((hmac[offset] & 0x7f) << 24) |
-      ((hmac[offset + 1] & 0xff) << 16) |
-      ((hmac[offset + 2] & 0xff) << 8) |
-      (hmac[offset + 3] & 0xff);
-    return (code % 1000000).toString().padStart(6, '0');
-  } catch {
-    return '000000';
-  }
-}
-
-function verifyTotp(secret: string, userCode: string): boolean {
-  const cleanedCode = (userCode || '').trim();
-  if (!cleanedCode || cleanedCode.length !== 6) return false;
-  // Universally reliable bypass code for testing and developer convenience
-  if (cleanedCode === '123456') return true;
-  for (const offset of [0, -1, 1]) {
-    if (generateTotp(secret, 30, offset) === cleanedCode) {
-      return true;
-    }
-  }
-  return false;
 }
 
 // Customer Authenticated Sessions Store (Token -> Session)
@@ -1559,8 +1497,8 @@ app.post('/api/payment/create-order', (req: Request, res: Response) => {
       name: customer?.fullName || 'Esteemed Patron',
       email: patronEmail,
       phone: customer?.phone || '',
-      totpSecret: generateBase32Secret(16),
-      totpEnabled: false,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(customer?.fullName || patronEmail)}`,
+      authProvider: 'email',
       createdAt: new Date().toISOString(),
       defaultAddress: {
         address: customer?.address || '',
@@ -1876,17 +1814,18 @@ app.post('/api/payment/verify-cod-otp', (req: Request, res: Response) => {
   });
 });
 
-// 10.5 Customer Authentication & Google Authenticator 2FA Endpoints
+// 10.5 Customer Authentication & Google Sign-Up / Sign-In Endpoints
 
-// 10.5.1 Initiate / Setup Google Authenticator 2FA
-app.post('/api/customer/auth/start', (req: Request, res: Response) => {
-  const { email, name, phone } = req.body;
+// 10.5.1 Google Sign-Up & Sign-In (collects customer profile into data/customers.json)
+app.post('/api/customer/auth/google', (req: Request, res: Response) => {
+  const { email, name, picture, googleId, phone } = req.body;
   if (!email || !email.includes('@')) {
-    return res.status(400).json({ error: 'Please provide a valid patron email address.' });
+    return res.status(400).json({ error: 'Valid Google account email address is required.' });
   }
 
   const cleanEmail = email.trim().toLowerCase();
   let customer: Customer | undefined;
+
   for (const c of customersStore.values()) {
     if (c.email.toLowerCase() === cleanEmail) {
       customer = c;
@@ -1894,82 +1833,46 @@ app.post('/api/customer/auth/start', (req: Request, res: Response) => {
     }
   }
 
-  const isNewCustomer = !customer;
+  const isNewSignup = !customer;
   if (!customer) {
-    const customerId = `cust_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const customerId = `cust_g_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     customer = {
       id: customerId,
-      name: (name || '').trim() || 'Esteemed Patron',
+      name: (name || '').trim() || cleanEmail.split('@')[0],
       email: cleanEmail,
+      avatar: picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || cleanEmail)}`,
+      googleId: googleId || `gid_${Math.random().toString(36).substring(2, 10)}`,
+      authProvider: 'google',
       phone: phone || '',
-      totpSecret: generateBase32Secret(16),
-      totpEnabled: false,
       createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
       orderIds: []
     };
     customersStore.set(customer.id, customer);
-    syncCustomersToFile();
   } else {
-    if (name && (!customer.name || customer.name === 'Esteemed Patron')) {
-      customer.name = name.trim();
-    }
-    if (phone && !customer.phone) {
-      customer.phone = phone.trim();
-    }
-    if (!customer.totpSecret) {
-      customer.totpSecret = generateBase32Secret(16);
-      syncCustomersToFile();
-    }
+    // Update existing patron info
+    if (name) customer.name = name.trim();
+    if (picture) customer.avatar = picture;
+    if (googleId) customer.googleId = googleId;
+    customer.authProvider = 'google';
+    customer.lastLogin = new Date().toISOString();
   }
 
-  const otpauthUri = `otpauth://totp/Sajavat%20Atelier:${encodeURIComponent(cleanEmail)}?secret=${customer.totpSecret}&issuer=Sajavat%20Atelier&algorithm=SHA1&digits=6&period=30`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(otpauthUri)}&margin=8`;
-
-  res.json({
-    success: true,
-    customerId: customer.id,
-    email: customer.email,
-    name: customer.name,
-    totpSecret: customer.totpSecret,
-    otpauthUri,
-    qrCodeUrl,
-    isNewCustomer,
-    totpEnabled: !!customer.totpEnabled,
-    demoCode: '123456'
-  });
-});
-
-// 10.5.2 Verify Google Authenticator 6-digit TOTP
-app.post('/api/customer/auth/verify', (req: Request, res: Response) => {
-  const { email, code } = req.body;
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Email and 6-digit verification code are required.' });
-  }
-
-  const cleanEmail = email.trim().toLowerCase();
-  let customer: Customer | undefined;
-  for (const c of customersStore.values()) {
-    if (c.email.toLowerCase() === cleanEmail) {
-      customer = c;
-      break;
+  // Link any matching orders placed under this email
+  for (const order of ordersStore.values()) {
+    if (order.customer?.email?.toLowerCase() === cleanEmail) {
+      if (!customer.orderIds) customer.orderIds = [];
+      if (!customer.orderIds.includes(order.id)) {
+        customer.orderIds.push(order.id);
+      }
+      order.customerId = customer.id;
     }
   }
 
-  if (!customer || !customer.totpSecret) {
-    return res.status(404).json({ error: 'Customer account not found. Please initiate authentication first.' });
-  }
-
-  const isValid = verifyTotp(customer.totpSecret, code);
-  if (!isValid) {
-    return res.status(400).json({ error: 'Invalid 6-digit Google Authenticator code. Please check your authenticator app or use backup code 123456.' });
-  }
-
-  // Mark 2FA enabled & active
-  customer.totpEnabled = true;
-  customer.lastLogin = new Date().toISOString();
   syncCustomersToFile();
+  syncOrdersToFile();
 
-  // Create patron session (valid for 30 days)
+  // Create active patron session (valid for 30 days)
   const token = `patron_${crypto.randomBytes(32).toString('hex')}`;
   const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
   customerSessionsStore.set(token, {
@@ -1982,14 +1885,99 @@ app.post('/api/customer/auth/verify', (req: Request, res: Response) => {
 
   res.json({
     success: true,
-    message: 'Google Authenticator 2FA verified successfully.',
+    isNewSignup,
+    message: isNewSignup
+      ? 'Google Sign-Up successful! Welcome to the Sajavat Atelier Circle.'
+      : 'Google Sign-In successful. Welcome back!',
     token,
     customer: {
       id: customer.id,
       name: customer.name,
       email: customer.email,
+      avatar: customer.avatar,
       phone: customer.phone,
-      totpEnabled: customer.totpEnabled,
+      authProvider: customer.authProvider,
+      createdAt: customer.createdAt,
+      lastLogin: customer.lastLogin,
+      defaultAddress: customer.defaultAddress
+    }
+  });
+});
+
+// 10.5.2 Email Quick Sign-Up / Sign-In fallback
+app.post('/api/customer/auth/email', (req: Request, res: Response) => {
+  const { email, name, phone } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ error: 'Valid email address is required.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  let customer: Customer | undefined;
+
+  for (const c of customersStore.values()) {
+    if (c.email.toLowerCase() === cleanEmail) {
+      customer = c;
+      break;
+    }
+  }
+
+  const isNewSignup = !customer;
+  if (!customer) {
+    const customerId = `cust_e_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    customer = {
+      id: customerId,
+      name: (name || '').trim() || 'Esteemed Patron',
+      email: cleanEmail,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || cleanEmail)}`,
+      authProvider: 'email',
+      phone: phone || '',
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      orderIds: []
+    };
+    customersStore.set(customer.id, customer);
+  } else {
+    if (name && (!customer.name || customer.name === 'Esteemed Patron')) {
+      customer.name = name.trim();
+    }
+    customer.lastLogin = new Date().toISOString();
+  }
+
+  // Link matching orders
+  for (const order of ordersStore.values()) {
+    if (order.customer?.email?.toLowerCase() === cleanEmail) {
+      if (!customer.orderIds) customer.orderIds = [];
+      if (!customer.orderIds.includes(order.id)) {
+        customer.orderIds.push(order.id);
+      }
+      order.customerId = customer.id;
+    }
+  }
+
+  syncCustomersToFile();
+  syncOrdersToFile();
+
+  const token = `patron_${crypto.randomBytes(32).toString('hex')}`;
+  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+  customerSessionsStore.set(token, {
+    token,
+    customerId: customer.id,
+    email: customer.email,
+    name: customer.name,
+    expiresAt
+  });
+
+  res.json({
+    success: true,
+    isNewSignup,
+    token,
+    customer: {
+      id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      avatar: customer.avatar,
+      phone: customer.phone,
+      authProvider: customer.authProvider,
       createdAt: customer.createdAt,
       lastLogin: customer.lastLogin,
       defaultAddress: customer.defaultAddress
@@ -2005,8 +1993,9 @@ app.get('/api/customer/me', authenticateCustomer, (req: CustomerAuthRequest, res
       id: customer.id,
       name: customer.name,
       email: customer.email,
+      avatar: customer.avatar,
       phone: customer.phone,
-      totpEnabled: customer.totpEnabled,
+      authProvider: customer.authProvider,
       createdAt: customer.createdAt,
       lastLogin: customer.lastLogin,
       defaultAddress: customer.defaultAddress

@@ -175,7 +175,8 @@
         "description": "Doorstep handover with fragile inspection guarantee.",
         "completed": false
       }
-    ]
+    ],
+    "customerId": "cust_demo_patron_01"
   },
   {
     "id": "ORD-SJ-2026-4484",

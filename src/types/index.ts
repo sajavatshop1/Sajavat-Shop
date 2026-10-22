@@ -408,9 +408,10 @@ export interface Customer {
   id: string;
   name: string;
   email: string;
+  avatar?: string;
   phone?: string;
-  totpSecret?: string;
-  totpEnabled: boolean;
+  googleId?: string;
+  authProvider?: 'google' | 'email';
   createdAt: string;
   lastLogin?: string;
   defaultAddress?: CustomerAddress;

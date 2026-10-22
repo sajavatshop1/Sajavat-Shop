@@ -3,11 +3,12 @@
     "id": "cust_demo_patron_01",
     "name": "Aarav Mehra",
     "email": "aarav.mehra@atelier-studio.in",
+    "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120",
     "phone": "+91 98201 44829",
-    "totpSecret": "JBSWY3DPEHPK3PXP",
-    "totpEnabled": true,
+    "googleId": "gid_aarav_9988",
+    "authProvider": "google",
     "createdAt": "2026-10-10T10:00:00.000Z",
-    "lastLogin": "2026-10-22T05:43:02.739Z",
+    "lastLogin": "2026-10-22T06:00:45.094Z",
     "defaultAddress": {
       "address": "Flat 402, Mayfair Palms, 18th Road, Khar West",
       "city": "Mumbai",
@@ -20,14 +21,34 @@
     ]
   },
   {
-    "id": "cust_1792647782745_0da1z",
+    "id": "cust_demo_patron_02",
     "name": "Priya Sharma",
     "email": "priya.sharma@example.com",
+    "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&h=120&q=80",
+    "phone": "+91 98201 54321",
+    "googleId": "gid_google_1094820194820192849",
+    "authProvider": "google",
+    "createdAt": "2026-10-15T11:20:00.000Z",
+    "lastLogin": "2026-10-22T08:00:00.000Z",
+    "defaultAddress": {
+      "address": "Villa 12, Gulmohar Avenue, Koregaon Park",
+      "city": "Pune",
+      "state": "Maharashtra",
+      "pincode": "411001",
+      "landmark": "Near South Main Road"
+    },
+    "orderIds": []
+  },
+  {
+    "id": "cust_g_1792648845108_rvq73",
+    "name": "Vikram Sengupta",
+    "email": "vikram.sengupta@gmail.com",
+    "avatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=120",
+    "googleId": "gid_vikram_12345",
+    "authProvider": "google",
     "phone": "",
-    "totpSecret": "JVHJADBRVCYNNBFE",
-    "totpEnabled": true,
-    "createdAt": "2026-10-22T05:43:02.745Z",
-    "orderIds": [],
-    "lastLogin": "2026-10-22T05:43:02.748Z"
+    "createdAt": "2026-10-22T06:00:45.108Z",
+    "lastLogin": "2026-10-22T06:00:45.108Z",
+    "orderIds": []
   }
 ]
