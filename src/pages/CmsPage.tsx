@@ -157,6 +157,7 @@ export function CmsPage({ setCurrentView, onProductsUpdated }: CmsPageProps) {
   const [editingBlogArticle, setEditingBlogArticle] = useState<JournalArticle | null>(null);
   const [imageChangeModal, setImageChangeModal] = useState<{ product: Product; key: string; currentUrl: string } | null>(null);
   const [customImageUrl, setCustomImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
 
   // New product form
   const [newProd, setNewProd] = useState<Partial<Product>>({
@@ -668,6 +669,43 @@ export function CmsPage({ setCurrentView, onProductsUpdated }: CmsPageProps) {
     } catch (err: any) {
       showNotification(err.message || 'Failed to update image', 'error');
     }
+  };
+
+  // Upload an image file directly from computer/device
+  const handleUploadImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !authToken) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        setIsUploadingImage(true);
+        const base64Data = reader.result as string;
+        const res = await safeFetchJson('/api/cms/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            filename: file.name,
+            base64Data
+          })
+        });
+
+        if (res.ok && res.data?.url) {
+          setCustomImageUrl(res.data.url);
+          showNotification('Image uploaded successfully to server storage.');
+        } else {
+          throw new Error(res.error || 'Failed to upload image file');
+        }
+      } catch (err: any) {
+        showNotification(err.message || 'Upload failed', 'error');
+      } finally {
+        setIsUploadingImage(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Save Site Settings
@@ -3386,15 +3424,46 @@ export function CmsPage({ setCurrentView, onProductsUpdated }: CmsPageProps) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs uppercase tracking-wider text-stone-700 font-bold mb-1.5">
-                Paste New Image URL
+            {/* Upload from Computer / Device */}
+            <div className="bg-[#FFFDF9] border border-dashed border-[#D4AF37]/60 rounded-xl p-3.5 text-center">
+              <label className="flex flex-col items-center justify-center cursor-pointer group">
+                <Upload className="w-5 h-5 text-[#9B782E] mb-1 group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-semibold text-stone-800">
+                  {isUploadingImage ? 'Uploading image to atelier storage...' : 'Upload Image from Computer / Phone'}
+                </span>
+                <span className="text-[10px] text-stone-500 mt-0.5">
+                  PNG, JPG, WEBP, or SVG — Automatically stored in server /uploads
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadImageFile}
+                  disabled={isUploadingImage}
+                  className="hidden"
+                />
               </label>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs uppercase tracking-wider text-stone-700 font-bold">
+                  Or Paste New Image URL
+                </label>
+                {customImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomImageUrl('')}
+                    className="text-[10px] text-[#991B1B] hover:underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               <input
                 type="url"
                 value={customImageUrl}
                 onChange={(e) => setCustomImageUrl(e.target.value)}
-                placeholder="https://images.unsplash.com/photo-..."
+                placeholder="https://images.unsplash.com/photo-... or /uploads/..."
                 className="w-full bg-stone-50 border border-stone-300 rounded-xl px-4 py-2.5 text-xs text-stone-900 focus:outline-none focus:border-[#991B1B]"
               />
             </div>

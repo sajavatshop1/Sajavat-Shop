@@ -1,0 +1,23 @@
+[
+  {
+    "code": "FESTIVE15",
+    "discountPercentage": 15,
+    "minSubtotal": 0,
+    "description": "15% festive gift savings unlocked",
+    "active": true
+  },
+  {
+    "code": "DIWALI20",
+    "discountPercentage": 20,
+    "minSubtotal": 3500,
+    "description": "20% Grand Celebration Discount (Min cart ₹3,500)",
+    "active": true
+  },
+  {
+    "code": "SAJAVAT10",
+    "discountPercentage": 10,
+    "minSubtotal": 0,
+    "description": "10% Atelier Welcome Privileges",
+    "active": true
+  }
+]

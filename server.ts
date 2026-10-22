@@ -15,6 +15,11 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
 function loadJson<T>(filename: string, fallback: T): T {
   try {
     const filePath = path.join(DATA_DIR, filename);
@@ -43,10 +48,15 @@ import { INITIAL_JOURNAL_ARTICLES } from './src/data/mockData.js';
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
-// In-Memory SEO Architecture Store
-let fullSeoData = JSON.parse(JSON.stringify(INITIAL_FULL_SEO_DATA));
+// SEO Architecture Store (persisted to data/seo.json)
+let fullSeoData = loadJson('seo.json', JSON.parse(JSON.stringify(INITIAL_FULL_SEO_DATA)));
+if (!fs.existsSync(path.join(DATA_DIR, 'seo.json'))) {
+  saveJson('seo.json', fullSeoData);
+}
 
 // 301 / 302 SEO Dynamic Redirect Engine Middleware
 app.use((req: Request, res: Response, next) => {
@@ -804,7 +814,7 @@ const codOtpStore: Map<string, { otp: string; expiresAt: number; phone: string }
 // Active 3DS Challenges store for Cards
 const cardChallengeStore: Map<string, { challengeOtp: string; orderId: string; expiresAt: number }> = new Map();
 
-// Customer Reviews In-Memory Store
+// Customer Reviews Store with File Persistence
 export interface Review {
   id: string;
   productId: string;
@@ -818,9 +828,18 @@ export interface Review {
   finishPurchased?: string;
   helpfulCount: number;
   recommend: boolean;
+  status?: 'approved' | 'pending';
 }
 
 const reviewsStore: Map<string, Review[]> = new Map();
+
+function syncReviewsToFile(): void {
+  const reviewsRecord: Record<string, Review[]> = {};
+  for (const [pId, rList] of reviewsStore.entries()) {
+    reviewsRecord[pId] = rList;
+  }
+  saveJson('reviews.json', reviewsRecord);
+}
 
 // Helper to seed initial verified reviews
 const seedInitialReviews = (pId: string, customReviews: Review[]) => {
@@ -840,7 +859,8 @@ const defaultInitialReviews: Review[] = [
     verifiedPurchase: true,
     finishPurchased: 'Antique Heirloom Brass',
     helpfulCount: 24,
-    recommend: true
+    recommend: true,
+    status: 'approved'
   },
   {
     id: 'rev-02',
@@ -854,7 +874,8 @@ const defaultInitialReviews: Review[] = [
     verifiedPurchase: true,
     finishPurchased: 'Antique Heirloom Brass',
     helpfulCount: 18,
-    recommend: true
+    recommend: true,
+    status: 'approved'
   },
   {
     id: 'rev-03',
@@ -868,7 +889,8 @@ const defaultInitialReviews: Review[] = [
     verifiedPurchase: true,
     finishPurchased: 'Raw Chiseled Matte Brass',
     helpfulCount: 11,
-    recommend: true
+    recommend: true,
+    status: 'approved'
   },
   {
     id: 'rev-04',
@@ -882,12 +904,24 @@ const defaultInitialReviews: Review[] = [
     verifiedPurchase: true,
     finishPurchased: 'Vintage Patina Gold',
     helpfulCount: 7,
-    recommend: true
+    recommend: true,
+    status: 'approved'
   }
 ];
 
-seedInitialReviews('mayura-brass-urli', defaultInitialReviews);
-seedInitialReviews('saj-01', defaultInitialReviews);
+// Load saved reviews from reviews.json if exists
+const loadedReviews = loadJson<Record<string, Review[]> | null>('reviews.json', null);
+if (loadedReviews && typeof loadedReviews === 'object' && Object.keys(loadedReviews).length > 0) {
+  for (const [pId, rList] of Object.entries(loadedReviews)) {
+    if (Array.isArray(rList)) {
+      reviewsStore.set(pId, rList);
+    }
+  }
+} else {
+  seedInitialReviews('mayura-brass-urli', defaultInitialReviews);
+  seedInitialReviews('saj-01', defaultInitialReviews);
+  syncReviewsToFile();
+}
 
 // Pre-seeded demo order so tracking works immediately out of the box
 const demoOrderId = 'ORD-SJ-2026-4482';
@@ -1171,7 +1205,20 @@ app.post('/api/pincode/check', (req: Request, res: Response) => {
   });
 });
 
-// 4. Coupons & Offers API
+// 4. Coupons & Offers API (backed by data/coupons.json)
+export interface Coupon {
+  code: string;
+  discountPercentage: number;
+  minSubtotal?: number;
+  description: string;
+  active: boolean;
+}
+
+app.get('/api/coupons', (_req: Request, res: Response) => {
+  const coupons = loadJson<Coupon[]>('coupons.json', []);
+  res.json({ success: true, coupons: coupons.filter(c => c.active) });
+});
+
 app.post('/api/coupons/validate', (req: Request, res: Response) => {
   const { code, subtotal } = req.body;
   if (!code) {
@@ -1179,49 +1226,35 @@ app.post('/api/coupons/validate', (req: Request, res: Response) => {
   }
 
   const cleanCode = code.trim().toUpperCase();
+  const coupons = loadJson<Coupon[]>('coupons.json', [
+    { code: 'FESTIVE15', discountPercentage: 15, minSubtotal: 0, description: '15% festive gift savings unlocked', active: true },
+    { code: 'DIWALI20', discountPercentage: 20, minSubtotal: 3500, description: '20% Grand Celebration Discount (Min cart ₹3,500)', active: true },
+    { code: 'SAJAVAT10', discountPercentage: 10, minSubtotal: 0, description: '10% Atelier Welcome Privileges', active: true }
+  ]);
 
-  if (cleanCode === 'FESTIVE15') {
-    const discount = Math.round((subtotal || 0) * 0.15);
-    return res.json({
-      valid: true,
-      code: 'FESTIVE15',
-      discountPercentage: 15,
-      discountAmount: discount,
-      message: 'FESTIVE15 applied (15% festive gift savings unlocked)'
+  const matched = coupons.find(c => c.active && c.code.toUpperCase() === cleanCode);
+  if (!matched) {
+    return res.status(400).json({
+      valid: false,
+      message: 'Invalid or expired promotional code. Try FESTIVE15 for 15% off.'
     });
   }
 
-  if (cleanCode === 'DIWALI20') {
-    if (subtotal < 3500) {
-      return res.status(400).json({
-        valid: false,
-        message: 'DIWALI20 requires a minimum cart subtotal of ₹3,500.'
-      });
-    }
-    const discount = Math.round((subtotal || 0) * 0.20);
-    return res.json({
-      valid: true,
-      code: 'DIWALI20',
-      discountPercentage: 20,
-      discountAmount: discount,
-      message: 'DIWALI20 applied (20% Grand Celebration Discount)'
+  const cartSubtotal = Number(subtotal) || 0;
+  if (matched.minSubtotal && cartSubtotal < matched.minSubtotal) {
+    return res.status(400).json({
+      valid: false,
+      message: `${matched.code} requires a minimum cart subtotal of ₹${matched.minSubtotal.toLocaleString('en-IN')}.`
     });
   }
 
-  if (cleanCode === 'SAJAVAT10') {
-    const discount = Math.round((subtotal || 0) * 0.10);
-    return res.json({
-      valid: true,
-      code: 'SAJAVAT10',
-      discountPercentage: 10,
-      discountAmount: discount,
-      message: 'SAJAVAT10 applied (10% Atelier Welcome Privileges)'
-    });
-  }
-
-  return res.status(400).json({
-    valid: false,
-    message: 'Invalid or expired promotional code. Try FESTIVE15 for 15% off.'
+  const discount = Math.round((cartSubtotal * matched.discountPercentage) / 100);
+  return res.json({
+    valid: true,
+    code: matched.code,
+    discountPercentage: matched.discountPercentage,
+    discountAmount: discount,
+    message: `${matched.code} applied (${matched.description})`
   });
 });
 
@@ -1875,6 +1908,7 @@ app.post('/api/reviews', (req: Request, res: Response) => {
   const existingReviews = reviewsStore.get(productId) || [];
   const updatedReviews = [newReview, ...existingReviews];
   reviewsStore.set(productId, updatedReviews);
+  syncReviewsToFile();
 
   const summary = calculateReviewSummary(updatedReviews);
 
@@ -1883,6 +1917,7 @@ app.post('/api/reviews', (req: Request, res: Response) => {
   if (targetProduct) {
     targetProduct.rating = summary.averageRating;
     targetProduct.reviewsCount = summary.totalReviews;
+    saveJson('products.json', products);
   }
 
   res.json({
@@ -1912,6 +1947,8 @@ app.post('/api/reviews/:reviewId/helpful', (req: Request, res: Response) => {
   if (!found) {
     return res.status(404).json({ error: 'Review not found.' });
   }
+
+  syncReviewsToFile();
 
   res.json({
     success: true,
@@ -1997,36 +2034,39 @@ function seedAdminUser(user: {
   adminUsersStore.set(record.id, record);
 }
 
+function syncUsersToFile(): void {
+  const usersList = Array.from(adminUsersStore.values());
+  saveJson('users.json', usersList);
+}
+
 // Master Super Admin Configuration (Sample credentials configured via environment variables or clean defaults)
 const DEFAULT_ADMIN_USERNAME = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
 const DEFAULT_ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@sajavat.com').trim().toLowerCase();
 const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'sajavat@123';
 const DEFAULT_ADMIN_NAME = (process.env.ADMIN_NAME || 'Super Admin').trim();
 
-// Seed Single Master Super Admin Account
-seedAdminUser({
-  id: 'usr-super-admin-01',
-  username: DEFAULT_ADMIN_USERNAME,
-  email: DEFAULT_ADMIN_EMAIL,
-  fullName: DEFAULT_ADMIN_NAME,
-  role: 'super_admin',
-  plainPassword: DEFAULT_ADMIN_PASSWORD
-});
-
-function syncUsersToFile(): void {
-  const usersList = Array.from(adminUsersStore.values()).map(u => ({
-    id: u.id,
-    username: u.username,
-    email: u.email,
-    fullName: u.fullName,
-    role: u.role,
-    createdAt: u.createdAt,
-    lastLogin: u.lastLogin
-  }));
-  saveJson('users.json', usersList);
+// Load saved admin users from users.json if exists
+const loadedUsers = loadJson<AdminUserRecord[] | null>('users.json', null);
+if (Array.isArray(loadedUsers) && loadedUsers.length > 0) {
+  loadedUsers.forEach(u => {
+    if (u && u.id && u.username) {
+      adminUsersStore.set(u.id, u);
+    }
+  });
 }
 
-syncUsersToFile();
+// Ensure at least one master Super Admin exists
+if (!Array.from(adminUsersStore.values()).some(u => u.username === DEFAULT_ADMIN_USERNAME || u.role === 'super_admin')) {
+  seedAdminUser({
+    id: 'usr-super-admin-01',
+    username: DEFAULT_ADMIN_USERNAME,
+    email: DEFAULT_ADMIN_EMAIL,
+    fullName: DEFAULT_ADMIN_NAME,
+    role: 'super_admin',
+    plainPassword: DEFAULT_ADMIN_PASSWORD
+  });
+  syncUsersToFile();
+}
 
 
 // Seed additional realistic orders for the CMS view
@@ -2460,6 +2500,8 @@ app.put('/api/auth/update-credentials', authenticateAdmin, (req: AuthRequest, re
     session.email = user.email;
   }
 
+  syncUsersToFile();
+
   res.json({
     success: true,
     message: 'Atelier credentials updated successfully.',
@@ -2839,10 +2881,14 @@ app.get('/api/cms/orders', authenticateAdmin, (req: AuthRequest, res: Response) 
   });
 });
 
-// Update Order Status & Fulfillment Tracking
-app.patch('/api/cms/orders/:id/status', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+// Update Order Status & Fulfillment Tracking (Supports both PATCH and PUT)
+app.all('/api/cms/orders/:id/status', authenticateAdmin, (req: AuthRequest, res: Response) => {
+  if (req.method !== 'PATCH' && req.method !== 'PUT') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const { id } = req.params;
-  const { status, trackingCarrier, waybillNumber, stepDescription } = req.body;
+  const { status, trackingCarrier, carrier, waybillNumber, waybill, stepDescription, note } = req.body;
 
   const order = ordersStore.get(id);
   if (!order) {
@@ -2854,23 +2900,25 @@ app.patch('/api/cms/orders/:id/status', authenticateAdmin, requireSuperAdmin, (r
     order.status = status;
   }
 
-  if (trackingCarrier) {
-    order.shipping.trackingCarrier = String(trackingCarrier).trim();
+  const resolvedCarrier = trackingCarrier || carrier;
+  if (resolvedCarrier) {
+    order.shipping.trackingCarrier = String(resolvedCarrier).trim();
   }
 
-  if (waybillNumber) {
-    order.shipping.waybillNumber = String(waybillNumber).trim();
+  const resolvedWaybill = waybillNumber || waybill;
+  if (resolvedWaybill) {
+    order.shipping.waybillNumber = String(resolvedWaybill).trim();
   }
 
+  const resolvedNote = stepDescription || note;
   // Update or append step in tracking timeline
-  if (stepDescription) {
-    // Unmark old current steps
+  if (resolvedNote) {
     order.trackingTimeline.forEach(step => { step.current = false; });
 
     order.trackingTimeline.push({
       step: `Atelier Status: ${order.status.toUpperCase()}`,
       timestamp: 'Just now',
-      description: String(stepDescription).trim(),
+      description: String(resolvedNote).trim(),
       completed: true,
       current: true
     });
@@ -2901,8 +2949,12 @@ app.get('/api/cms/inquiries', authenticateAdmin, (req: AuthRequest, res: Respons
   });
 });
 
-// Update Inquiry Status & Staff Notes
-app.patch('/api/cms/inquiries/:id/status', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+// Update Inquiry Status & Staff Notes (Supports both PATCH and PUT)
+app.all('/api/cms/inquiries/:id/status', authenticateAdmin, (req: AuthRequest, res: Response) => {
+  if (req.method !== 'PATCH' && req.method !== 'PUT') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const { id } = req.params;
   const { status, staffNotes } = req.body;
 
@@ -2924,7 +2976,7 @@ app.patch('/api/cms/inquiries/:id/status', authenticateAdmin, requireSuperAdmin,
 });
 
 // Delete Inquiry
-app.delete('/api/cms/inquiries/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.delete('/api/cms/inquiries/:id', authenticateAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = contactInquiries.findIndex(i => i.id === id || i.referenceId === id);
 
@@ -2942,8 +2994,8 @@ app.delete('/api/cms/inquiries/:id', authenticateAdmin, requireSuperAdmin, (req:
 // CMS JOURNAL & EDITORIAL ARTICLES
 // ==========================================
 
-// Create Journal Article
-app.post('/api/cms/journal', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+// Create Journal Article (Supports both /api/cms/journal and /api/journal)
+app.post(['/api/cms/journal', '/api/journal'], authenticateAdmin, (req: AuthRequest, res: Response) => {
   const { title, category, categoryLabel, readTime, author, authorTitle, leadExcerpt, content, image } = req.body;
 
   if (!title || !leadExcerpt) {
@@ -2970,11 +3022,11 @@ app.post('/api/cms/journal', authenticateAdmin, requireSuperAdmin, (req: AuthReq
 
   journalArticles.unshift(newArticle);
   saveJson('journal.json', journalArticles);
-  res.status(201).json({ success: true, message: 'Journal article published.', article: newArticle });
+  res.status(201).json({ success: true, message: 'Journal article published.', article: newArticle, ...newArticle });
 });
 
-// Update Journal Article
-app.put('/api/cms/journal/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+// Update Journal Article (Supports both /api/cms/journal/:id and /api/journal/:id)
+app.put(['/api/cms/journal/:id', '/api/journal/:id'], authenticateAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = journalArticles.findIndex(a => a.id === id);
 
@@ -2988,11 +3040,11 @@ app.put('/api/cms/journal/:id', authenticateAdmin, requireSuperAdmin, (req: Auth
   };
 
   saveJson('journal.json', journalArticles);
-  res.json({ success: true, message: 'Article updated.', article: journalArticles[index] });
+  res.json({ success: true, message: 'Article updated.', article: journalArticles[index], ...journalArticles[index] });
 });
 
-// Delete Journal Article
-app.delete('/api/cms/journal/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+// Delete Journal Article (Supports both /api/cms/journal/:id and /api/journal/:id)
+app.delete(['/api/cms/journal/:id', '/api/journal/:id'], authenticateAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const index = journalArticles.findIndex(a => a.id === id);
 
@@ -3027,7 +3079,7 @@ app.get('/api/cms/reviews', authenticateAdmin, (_req: AuthRequest, res: Response
 });
 
 // Toggle Review Verification
-app.patch('/api/cms/reviews/:id/verify', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.patch('/api/cms/reviews/:id/verify', authenticateAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   let targetReview: Review | undefined;
 
@@ -3044,11 +3096,39 @@ app.patch('/api/cms/reviews/:id/verify', authenticateAdmin, requireSuperAdmin, (
     return res.status(404).json({ error: 'Review not found.' });
   }
 
+  syncReviewsToFile();
   res.json({ success: true, message: 'Review verification toggled.', review: targetReview });
 });
 
+// Update Review Status (Approved / Pending - Supports PUT and PATCH)
+app.all('/api/cms/reviews/:id/status', authenticateAdmin, (req: AuthRequest, res: Response) => {
+  if (req.method !== 'PATCH' && req.method !== 'PUT') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { id } = req.params;
+  const { status } = req.body;
+  let targetReview: Review | undefined;
+
+  for (const rList of reviewsStore.values()) {
+    const found = rList.find(r => r.id === id);
+    if (found) {
+      found.status = status;
+      targetReview = found;
+      break;
+    }
+  }
+
+  if (!targetReview) {
+    return res.status(404).json({ error: 'Review not found.' });
+  }
+
+  syncReviewsToFile();
+  res.json({ success: true, message: `Review status updated to ${status}.`, review: targetReview });
+});
+
 // Delete Review
-app.delete('/api/cms/reviews/:id', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.delete('/api/cms/reviews/:id', authenticateAdmin, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   let deleted = false;
 
@@ -3066,6 +3146,7 @@ app.delete('/api/cms/reviews/:id', authenticateAdmin, requireSuperAdmin, (req: A
     return res.status(404).json({ error: 'Review not found.' });
   }
 
+  syncReviewsToFile();
   res.json({ success: true, message: 'Review deleted.' });
 });
 
@@ -3126,7 +3207,7 @@ app.get('/api/settings', (_req: Request, res: Response) => {
 });
 
 // Admin Update Site Settings
-app.put(['/api/cms/settings', '/api/settings'], authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+app.put(['/api/cms/settings', '/api/settings'], authenticateAdmin, (req: AuthRequest, res: Response) => {
   siteSettings = {
     ...siteSettings,
     ...req.body
@@ -3135,31 +3216,82 @@ app.put(['/api/cms/settings', '/api/settings'], authenticateAdmin, requireSuperA
   res.json({ success: true, message: 'Atelier site settings updated.', settings: siteSettings });
 });
 
-// Admin Quick Image Replacer for any product
-app.patch('/api/cms/products/:id/image', authenticateAdmin, requireSuperAdmin, (req: AuthRequest, res: Response) => {
+// Media & Artwork File Upload (Base64 -> /public/uploads/ -> /uploads/url)
+app.post('/api/cms/upload', authenticateAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const { filename, base64Data } = req.body;
+    if (!base64Data || typeof base64Data !== 'string') {
+      return res.status(400).json({ error: 'base64Data is required.' });
+    }
 
-  const { id } = req.params;
-  const { imageUrl, imageKey } = req.body; // imageKey: 'main' | 'lifestyle' | 'waterView' | 'engraving' | 'giftBox'
+    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    let buffer: Buffer;
+    let ext = 'jpg';
 
-  const product = products.find(p => p.id === id);
-  if (!product) {
-    return res.status(404).json({ error: 'Product not found.' });
+    if (matches && matches.length === 3) {
+      const mime = matches[1];
+      buffer = Buffer.from(matches[2], 'base64');
+      if (mime.includes('png')) ext = 'png';
+      else if (mime.includes('webp')) ext = 'webp';
+      else if (mime.includes('gif')) ext = 'gif';
+      else if (mime.includes('svg')) ext = 'svg';
+    } else {
+      buffer = Buffer.from(base64Data, 'base64');
+    }
+
+    const cleanBase = (filename || 'artwork')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .substring(0, 40);
+    const savedName = `art_${Date.now()}_${cleanBase}.${ext}`;
+    const filePath = path.join(UPLOADS_DIR, savedName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const publicUrl = `/uploads/${savedName}`;
+    res.status(201).json({
+      success: true,
+      message: 'Media uploaded successfully.',
+      url: publicUrl,
+      filename: savedName
+    });
+  } catch (err: any) {
+    console.error('Error handling upload:', err);
+    res.status(500).json({ error: err.message || 'Failed to process media upload.' });
   }
-
-  if (!imageUrl || typeof imageUrl !== 'string') {
-    return res.status(400).json({ error: 'Valid imageUrl is required.' });
-  }
-
-  const key = (imageKey || 'main') as keyof typeof product.images;
-  product.images[key] = imageUrl.trim();
-  saveJson('products.json', products);
-
-  res.json({
-    success: true,
-    message: `Updated ${key} image for ${product.name}.`,
-    product
-  });
 });
+
+// Update Product Image (Supports quick swap /api/cms/update-image and key-based updates)
+app.all(
+  ['/api/cms/update-image', '/api/cms/products/update-image', '/api/cms/products/:id/image'],
+  authenticateAdmin,
+  (req: AuthRequest, res: Response) => {
+    if (req.method !== 'POST' && req.method !== 'PATCH' && req.method !== 'PUT') {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const id = req.params?.id || req.body?.productId || req.body?.id;
+    const { imageUrl, imageType, imageKey } = req.body;
+
+    const product = products.find(p => p.id === id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found.' });
+    }
+
+    if (!imageUrl || typeof imageUrl !== 'string') {
+      return res.status(400).json({ error: 'Valid imageUrl is required.' });
+    }
+
+    const key = (imageType || imageKey || 'main') as keyof typeof product.images;
+    product.images[key] = imageUrl.trim();
+    saveJson('products.json', products);
+
+    res.json({
+      success: true,
+      message: `Updated ${key} image for ${product.name}.`,
+      product
+    });
+  }
+);
 
 // ==========================================
 // DYNAMIC XML SITEMAP & ROBOTS.TXT (SEO ENGINE)
@@ -3336,6 +3468,8 @@ app.put(
     if (update.sitemap) fullSeoData.sitemap = { ...fullSeoData.sitemap, ...update.sitemap };
     if (Array.isArray(update.redirects)) fullSeoData.redirects = update.redirects;
 
+    saveJson('seo.json', fullSeoData);
+
     const audit = runSeoAudit(fullSeoData, products, journalArticles);
     res.json({
       success: true,
@@ -3365,7 +3499,6 @@ app.get('/api/cms/seo/redirects', authenticateAdmin, (_req: AuthRequest, res: Re
 app.post(
   '/api/cms/seo/redirects',
   authenticateAdmin,
-  requireSuperAdmin,
   (req: AuthRequest, res: Response) => {
     const { sourceUrl, targetUrl, statusCode, note } = req.body;
     if (!sourceUrl || !targetUrl) {
@@ -3385,6 +3518,7 @@ app.post(
     };
 
     fullSeoData.redirects.unshift(newRedirect);
+    saveJson('seo.json', fullSeoData);
     res.status(201).json({ success: true, message: 'Redirect rule created.', redirect: newRedirect });
   }
 );
@@ -3393,7 +3527,6 @@ app.post(
 app.put(
   '/api/cms/seo/redirects/:id',
   authenticateAdmin,
-  requireSuperAdmin,
   (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const index = fullSeoData.redirects.findIndex((r: any) => r.id === id);
@@ -3402,6 +3535,7 @@ app.put(
     }
 
     fullSeoData.redirects[index] = { ...fullSeoData.redirects[index], ...req.body };
+    saveJson('seo.json', fullSeoData);
     res.json({ success: true, message: 'Redirect updated.', redirect: fullSeoData.redirects[index] });
   }
 );
@@ -3410,10 +3544,10 @@ app.put(
 app.delete(
   '/api/cms/seo/redirects/:id',
   authenticateAdmin,
-  requireSuperAdmin,
   (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     fullSeoData.redirects = fullSeoData.redirects.filter((r: any) => r.id !== id);
+    saveJson('seo.json', fullSeoData);
     res.json({ success: true, message: 'Redirect rule removed.' });
   }
 );
