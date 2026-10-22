@@ -6,6 +6,8 @@
     "fullName": "Super Admin",
     "role": "super_admin",
     "createdAt": "2026-10-18T06:25:45.869Z",
-    "lastLogin": "2026-10-18T06:36:04.689Z"
+    "lastLogin": "2026-10-22T06:12:41.821Z",
+    "passwordSalt": "24453f0c346ab1411b1d5eeb3fbf35b8",
+    "passwordHash": "ad82706772a590ac413a09302a3cd3ed6d70985bc0f0a53bf325c3958fd8d76ffb5cfa87745b329cdadf0c7f4732a8e2c60d8b70c8e41e595b48034ac6996b8f"
   }
 ]
