@@ -10,7 +10,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onSelectCategory, siteSettings }) => {
-  const { itemCount, wishlist, setIsCartOpen, setIsWishlistOpen, setIsOrderLookupOpen, setIsSearchOpen } = useCart();
+  const { itemCount, wishlist, setIsCartOpen, setIsWishlistOpen, setIsOrderLookupOpen, setIsSearchOpen, customer } = useCart();
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -251,11 +251,22 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
 
             <button
               type="button"
-              aria-label="Track Order"
+              aria-label={customer ? `Patron Account: ${customer.name}` : 'Patron Account & 2FA'}
               onClick={() => setIsOrderLookupOpen(true)}
-              className="tap-target hover:text-[#800020] transition-colors p-1.5 hidden sm:flex items-center btn-press"
+              className="tap-target hover:text-[#800020] transition-colors p-1.5 hidden sm:flex items-center gap-1.5 btn-press"
+              title={customer ? `Signed in as ${customer.name} (Google 2FA Active)` : 'Patron Account & Orders'}
             >
-              <span className="material-symbols-outlined text-[22px]">person</span>
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined text-[22px]">person</span>
+                {customer && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#FFF9F2]" />
+                )}
+              </div>
+              {customer && (
+                <span className="text-[11px] font-medium text-[#800020] max-w-[70px] truncate hidden md:inline">
+                  {customer.name.split(' ')[0]}
+                </span>
+              )}
             </button>
 
 
@@ -329,7 +340,7 @@ export const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, onS
             {[
               { label: 'Our Story', view: 'about', icon: 'auto_stories' },
               { label: 'The Journal', view: 'journal', icon: 'article' },
-              { label: 'Track My Order', view: null as string | null, icon: 'local_shipping', action: () => setIsOrderLookupOpen(true) },
+              { label: customer ? `My Orders (${customer.name.split(' ')[0]})` : 'Patron Account & 2FA', view: null as string | null, icon: 'account_circle', action: () => setIsOrderLookupOpen(true) },
               { label: 'Customer Care', view: 'contact', icon: 'headset_mic', action: null as (() => void) | null },
             ].map(item => (
               <button

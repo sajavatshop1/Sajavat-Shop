@@ -99,6 +99,7 @@ export interface OrderCustomer {
 export interface Order {
   id: string;
   orderNumber: string;
+  customerId?: string;
   createdAt: string;
   status: 'pending_payment' | 'paid' | 'processing' | 'shipped' | 'delivered';
   customer: OrderCustomer;
@@ -394,3 +395,25 @@ export interface FullSeoData {
   robots: RobotsConfig;
   sitemap: SitemapConfig;
 }
+
+export interface CustomerAddress {
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark?: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  totpSecret?: string;
+  totpEnabled: boolean;
+  createdAt: string;
+  lastLogin?: string;
+  defaultAddress?: CustomerAddress;
+  orderIds?: string[];
+}
+

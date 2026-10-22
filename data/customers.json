@@ -1,0 +1,33 @@
+[
+  {
+    "id": "cust_demo_patron_01",
+    "name": "Aarav Mehra",
+    "email": "aarav.mehra@atelier-studio.in",
+    "phone": "+91 98201 44829",
+    "totpSecret": "JBSWY3DPEHPK3PXP",
+    "totpEnabled": true,
+    "createdAt": "2026-10-10T10:00:00.000Z",
+    "lastLogin": "2026-10-22T05:43:02.739Z",
+    "defaultAddress": {
+      "address": "Flat 402, Mayfair Palms, 18th Road, Khar West",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400052",
+      "landmark": "Near Khar Gymkhana"
+    },
+    "orderIds": [
+      "ORD-SJ-2026-4482"
+    ]
+  },
+  {
+    "id": "cust_1792647782745_0da1z",
+    "name": "Priya Sharma",
+    "email": "priya.sharma@example.com",
+    "phone": "",
+    "totpSecret": "JVHJADBRVCYNNBFE",
+    "totpEnabled": true,
+    "createdAt": "2026-10-22T05:43:02.745Z",
+    "orderIds": [],
+    "lastLogin": "2026-10-22T05:43:02.748Z"
+  }
+]

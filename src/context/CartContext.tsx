@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, CartItem } from '../types';
+import { Product, CartItem, Customer } from '../types';
 
 interface CouponState {
   code: string;
@@ -46,6 +46,10 @@ interface CartContextType {
   setActiveOrderId: (orderId: string | null) => void;
   shippingSpeed: 'express' | 'priority';
   setShippingSpeed: (speed: 'express' | 'priority') => void;
+  customer: Customer | null;
+  customerToken: string | null;
+  setCustomerAuth: (token: string, customer: Customer) => void;
+  customerLogout: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -152,6 +156,76 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isOrderLookupOpen, setIsOrderLookupOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null);
+
+  const [customerToken, setCustomerToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('sajavat_patron_token');
+    } catch {
+      return null;
+    }
+  });
+
+  const [customer, setCustomer] = useState<Customer | null>(() => {
+    try {
+      const saved = localStorage.getItem('sajavat_patron_profile');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      return null;
+    }
+    return null;
+  });
+
+  const setCustomerAuth = (token: string, customerData: Customer) => {
+    setCustomerToken(token);
+    setCustomer(customerData);
+    try {
+      localStorage.setItem('sajavat_patron_token', token);
+      localStorage.setItem('sajavat_patron_profile', JSON.stringify(customerData));
+    } catch {}
+  };
+
+  const customerLogout = async () => {
+    if (customerToken) {
+      try {
+        await fetch('/api/customer/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${customerToken}` }
+        });
+      } catch {}
+    }
+    setCustomerToken(null);
+    setCustomer(null);
+    try {
+      localStorage.removeItem('sajavat_patron_token');
+      localStorage.removeItem('sajavat_patron_profile');
+    } catch {}
+  };
+
+  // Validate active customer session on boot
+  useEffect(() => {
+    if (!customerToken) return;
+    fetch('/api/customer/me', {
+      headers: { Authorization: `Bearer ${customerToken}` }
+    })
+      .then(res => {
+        if (res.ok) return res.json();
+        throw new Error('Session invalid');
+      })
+      .then(data => {
+        if (data && data.customer) {
+          setCustomer(data.customer);
+          localStorage.setItem('sajavat_patron_profile', JSON.stringify(data.customer));
+        }
+      })
+      .catch(() => {
+        setCustomerToken(null);
+        setCustomer(null);
+        try {
+          localStorage.removeItem('sajavat_patron_token');
+          localStorage.removeItem('sajavat_patron_profile');
+        } catch {}
+      });
+  }, [customerToken]);
 
   const [toast, setToast] = useState<ToastState>({
     message: '',
@@ -333,7 +407,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeOrderId,
         setActiveOrderId,
         shippingSpeed,
-        setShippingSpeed
+        setShippingSpeed,
+        customer,
+        customerToken,
+        setCustomerAuth,
+        customerLogout
       }}
     >
       {children}

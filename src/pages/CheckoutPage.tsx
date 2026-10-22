@@ -31,18 +31,34 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
     addToCart,
     clearCart,
     showToast,
-    setActiveOrderId
+    setActiveOrderId,
+    customer
   } = useCart();
 
   // Recipient & Address Details form state
-  const [fullName, setFullName] = useState('Aarav Mehra');
-  const [email, setEmail] = useState('aarav.mehra@atelier-studio.in');
-  const [phone, setPhone] = useState('+91 98201 44829');
-  const [address, setAddress] = useState('Flat 402, Mayfair Palms, 18th Road, Khar West');
-  const [city, setCity] = useState('Mumbai');
-  const [state, setState] = useState('Maharashtra');
-  const [pincode, setPincode] = useState('400052');
-  const [landmark, setLandmark] = useState('Near Khar Gymkhana');
+  const [fullName, setFullName] = useState(customer?.name || 'Aarav Mehra');
+  const [email, setEmail] = useState(customer?.email || 'aarav.mehra@atelier-studio.in');
+  const [phone, setPhone] = useState(customer?.phone || '+91 98201 44829');
+  const [address, setAddress] = useState(customer?.defaultAddress?.address || 'Flat 402, Mayfair Palms, 18th Road, Khar West');
+  const [city, setCity] = useState(customer?.defaultAddress?.city || 'Mumbai');
+  const [state, setState] = useState(customer?.defaultAddress?.state || 'Maharashtra');
+  const [pincode, setPincode] = useState(customer?.defaultAddress?.pincode || '400052');
+  const [landmark, setLandmark] = useState(customer?.defaultAddress?.landmark || 'Near Khar Gymkhana');
+
+  React.useEffect(() => {
+    if (customer) {
+      if (customer.name) setFullName(customer.name);
+      if (customer.email) setEmail(customer.email);
+      if (customer.phone) setPhone(customer.phone);
+      if (customer.defaultAddress) {
+        if (customer.defaultAddress.address) setAddress(customer.defaultAddress.address);
+        if (customer.defaultAddress.city) setCity(customer.defaultAddress.city);
+        if (customer.defaultAddress.state) setState(customer.defaultAddress.state);
+        if (customer.defaultAddress.pincode) setPincode(customer.defaultAddress.pincode);
+        if (customer.defaultAddress.landmark) setLandmark(customer.defaultAddress.landmark);
+      }
+    }
+  }, [customer]);
 
   // Gift options
   const [isGift, setIsGift] = useState(true);
@@ -140,7 +156,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({
               handwrittenNote
             }
           : undefined,
-        couponCode: coupon?.code
+        couponCode: coupon?.code,
+        customerId: customer?.id
       };
 
       const res = await fetch('/api/payment/create-order', {
